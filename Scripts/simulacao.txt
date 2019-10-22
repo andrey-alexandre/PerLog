@@ -7,11 +7,11 @@ folder <- 'C:/Users/Andrey/Documents/Andrey/TCC/'
 source(paste(folder, 'funcoes.txt', sep = ''))
 
 # simulacao
-n <- 3*20; k <- 5; rho <- c(0.8, -0.4, -0.9); beta <- rep(0.5, k);n.desc <- 50;m <- n+n.desc; pfn.target <- .05
+n <- 500; k <- 5; rho <- c(0.8, -0.4, -0.9); beta <- rep(0.5, k);n.desc <- 50;m <- n+n.desc; pfn.target <- .05
 X1 <- cbind(1, matrix(runif(n = (m*(k-1)), min = -1, max = 1), m, (k-1)))
 colnames(X1) <- c('Intercept', kronecker("X_", 1:(k-1), paste, sep=''))
 X <- X1[1:n,]; Xprev <-  X1[(n+1):m,]
-REP <- 100
+REP <- 50
 
 est_glm <- yhat_glm <- std_glm <- est_MC <- std_MC <- fit_glmvet <- corte0 <- corte1 <- corte <- NULL
 pfp.insample.MC <- pfp.insample.glm <- pfn.insample.MC <- pfn.insample.glm <- NULL
@@ -46,7 +46,7 @@ while(r <= REP){
     std_MC[r,] <- fit_MC[,2]
 
     prob[[r]] <- predi(beta.vet=fit_MCvet[[r]][1:k,1],
-                     rho = fit_MCvet[[r]][(k+length(rho)),1], covar=X, resp=y)
+                     rho = fit_MCvet[[r]][(1:length(rho)+k),1], covar=X, resp=y)
     
     prob.glm  <-   predict(object = fit_glmvet[[r]], newx = X, type=c("response"))
     prob.MC  <-  prob[[r]]
@@ -86,10 +86,10 @@ pf_mat <- rbind(pf_insample_mat, pf_out_mat)
 rownames(pf_mat) <- c('PFP - insample','PFN - insample', 'PFP - out','PFN - out')
 colnames(pf_mat) <- c('GLM','MC')
 
-Bias <- cbind(c(colMeans(est_glm)-beta, NA), (colMeans(est_MC)-c(beta, rho)))
-EP <- cbind(c(sqrt(colMeans(est_glm^2)-colMeans(est_glm)^2), NA), sqrt(colMeans(est_MC^2)-colMeans(est_MC)^2))
+Bias <- cbind(c(colMeans(est_glm)-beta, rep(NA, length(rho))), (colMeans(est_MC, na.rm = T)-c(beta, rho)))
+EP <- cbind(c(sqrt(colMeans(est_glm^2)-colMeans(est_glm)^2), rep(NA, length(rho))), sqrt(colMeans(est_MC^2, na.rm = T)-colMeans(est_MC, na.rm = T)^2))
 RMSE <- sqrt(Bias^2+EP^2)
-mean.std <- cbind(c(colMeans(std_glm), NA), colMeans(std_MC))
+mean.std <- cbind(c(colMeans(std_glm), rep(NA, length(rho))), colMeans(std_MC, na.rm = T))
 rownames(Bias) <- rownames(EP) <- rownames(RMSE) <- rownames(mean.std) <- names(colMeans(est_MC))
 mat_Bias_RMSE <- cbind(Bias, RMSE); colnames(mat_Bias_RMSE) <- c('Bias - GLM','Bias - MC', 'RMSE - GLM','RMSE - MC')
 

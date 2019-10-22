@@ -84,20 +84,15 @@ loglik  <-  function(par,out){
   
   dpdrho  <-  -sqrt(c1)*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); dpdrho  <-  c(0, dpdrho)
   dpdrho_df <- data.frame(dpdrho, per = c(1, per)) %>% 
-    group_by(per) %>% 
-    mutate(ID = row_number()) %>% 
-    tidyr::spread(key = per, value = dpdrho) %>% 
-    select_at(.vars = per+1, .funs = function(x){paste0('Per', x)}) %>% 
-    mutate_all(.funs = function(x){ifelse(is.na(x), 0, x)}) %>% as.matrix
+    mutate(ID = row_number())%>% 
+    tidyr::spread(key = per, value = dpdrho) %>% select(-ID) %>% 
+    select_at(.vars = 1:s, .funs = function(x){paste0('Per', x)}) %>% 
+    mutate_all(.funs = function(x) tidyr::replace_na(x, replace = 0)) %>% as.matrix
   dldrho  <-  dldp*dpdrho
+  dldrho_m <- dldp*dpdrho_df
   
   # gradient
-  grad  <-  c(colSums(dldb), colSums(data.frame(dldrho, per = c(1, per)) %>% 
-                                       group_by(per) %>% 
-                                       mutate(ID = row_number()) %>% 
-                                       tidyr::spread(key = per, value = dldrho)  %>% 
-                                       select_at(.vars = per+1, .funs = function(x){paste0('Per', x)}),
-                                     na.rm = T))
+  grad  <-  c(colSums(dldb), colSums(dldrho_m))
   
   #hessian
   d2ldp2  <-  -resp/(p^2)-(1-resp)/((1-p)^2)
