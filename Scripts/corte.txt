@@ -1,0 +1,68 @@
+min.pfp.MC<-function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.01),
+                  pfn.target=.05, y, prob){
+# INICIO FUNCAO
+sens<-espec<-pfp<-pfn<-matrix(data = NA, nrow = length(corte0), ncol = length(corte1))
+  for(l in 1:length(corte0)){
+    for(j in 1:length(corte1)){
+      classif<- rep(0,(length(y)))
+      for(i in 2:length(y)){
+        if(y[i-1]==0){
+          if(prob[i]>corte0[l]){classif[i]<-1}
+        }else{
+          if(prob[i]>corte1[j]){classif[i]<-1}
+        }
+      }
+      A<-table(y,classif) 
+      if(ncol(A)==1){                                                 
+        sens[l,j]<-classif[1]                                                      
+        espec[l,j]<- 1-sens[l,j]                                                     
+      }else{                                                                   
+        espec[l,j]<- A[1,1]/sum(A[1,])                                             
+        sens[l,j]<- A[2,2]/sum(A[2,])                                              
+      }
+      p<-mean(y)
+      phat<-mean(classif)
+      pfp[l,j]<-(1-espec[l,j])*phat/(1-p)
+      pfn[l,j]<-(1-sens[l,j])*(1-phat)/p
+      if((l==1)&(j==1)){pfp.min<-pfp[l,j]}
+      if( (pfn[l,j]<=pfn.target) & (pfp[l,j]<pfp.min) ){
+        corte0min<-corte0[l]
+        corte1min<-corte1[j]
+        pfp.min<-pfp[l,j]
+        pfn.min<-pfn[l,j]
+      }
+    }
+  }
+  return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, corte0min=corte0min,
+              corte1min=corte1min))
+}
+
+
+min.pfp.glm<-function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob){
+  sens<-espec<-pfp<-pfn<-NULL
+  for(j in 1:length(corte)){
+    classif<- rep(0,(length(y)))
+    for(i in 2:length(y)){ if(prob[i]>corte[j]) classif[i]<-1 }
+    A<-table(y,classif)
+    if(ncol(A)==1){
+      if(classif[1]==1) sens[j]<-1
+      if(classif[1]==0) sens[j]<-0
+      espec[j]<-1-sens[j]
+    }else{
+      espec[j]<- A[1,1]/sum(A[1,])
+      sens[j]<- A[2,2]/sum(A[2,])
+    }
+    p<-mean(y)
+    phat<-mean(classif)
+    pfp[j]<-(1-espec[j])*phat/(1-p)
+    pfn[j]<-(1-sens[j])*(1-phat)/p
+    if(j==1){pfp.min<-pfp[j]}
+    if( (pfn[j]<=pfn.target) & (pfp[j]<pfp.min) ){
+      cortemin<-corte[j]
+      pfp.min<-pfp[j]
+      pfn.min<-pfn[j]
+    }
+  }
+  return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, cortemin=cortemin))
+}
+

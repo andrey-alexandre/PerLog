@@ -1,0 +1,34 @@
+#Note KATIUSKI
+folder<-"C:/Users/katiu/Dropbox/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/"
+# PC UFES
+#folder<-"C:/Users/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/"
+# PC CASA
+#folder<-"/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/"
+#################################### PERFORMING PREDICTION ##################
+#############################################################################
+################# From now on we can read one of the selected covariates
+source(paste(folder, 'funcoes_2018_11_04.R', sep = ''))
+folderO3<-read.table(paste(folder,"dados/in_O3.txt", sep=''), header = FALSE);O3<-as.matrix(O3)
+O3p<-read.table(paste(folder,"dados/out_O3.txt", sep=''), header = FALSE);O3p<-as.matrix(O3p)
+sel.matr<- as.matrix(read.table(paste(folder,"dados/in_cov_UL7.txt", sep=''), header = TRUE))
+sel.matrp<- as.matrix(read.table(paste(folder,"dados/out_cov_UL7.txt", sep=''), header = TRUE))
+# nomes<-c('Intercept', sub(pattern = '.', replacement = ':', x = colnames(sel.matr), fixed = TRUE))
+nomes<-c('Intercept',colnames(sel.matr))
+sel.matr<-cbind(1, sel.matr); sel.matrp<-cbind(1, sel.matrp)
+colnames(sel.matr)<-colnames(sel.matrp)<-nomes
+sel.matr1<-cbind(sel.matr[2:n,],O3[1:(n-1)])
+colnames(sel.matr1)<-c(colnames(sel.matr),'O3ar')
+
+fit.glm<-glm(O3[2:n]~.-1, data = as.data.frame(sel.matr1), family=binomial)
+
+##################### Forecasting
+pfn.target<-.05
+
+pglm<-predict(object = fit.glm, newdata = as.data.frame(sel.matr1), type = 'response')
+minpfpGLM<-min.pfp.glm(y=O3[2:n], prob=pglm, pfn.target = pfn.target)
+
+prevGLM<-prev.glm(fit=fit.glm, newY=as.matrix(O3p), newX=sel.matrp, corte=minpfpGLM$cortemin)
+
+minpfpGLM
+prevGLM
+
