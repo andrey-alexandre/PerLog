@@ -1,7 +1,7 @@
 #Note ANDREY
-#folder  <-  "C:/Google Drive/UFES/2019_2/PCC/Códigos/"
+folder  <-  "C:/Users/Andrey/Projetos/PerLog/Scripts/"
 # PC TRABALHO
-folder <- 'C:/Users/Andrey/Documents/Andrey/TCC/'
+#folder <- 'C:/Users/Andrey/Documents/Andrey/TCC/'
 # PC Casa Alessandro
 #folder <- '/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/'
 source(paste(folder, 'funcoes.txt', sep = ''))

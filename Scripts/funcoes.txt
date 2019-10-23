@@ -29,6 +29,17 @@ predi <-  function(beta.vet,rho,covar,resp, li=0.000000001, ls=0.999999999){
   return(p)
 }
 
+#######################################
+# Cria a matriz de derivada periódica #
+#######################################
+permatrix <- function(vector, period){
+  matrix <- data.frame(A = vector, per = c(1, period)) %>% 
+    mutate(ID = row_number())%>% 
+    tidyr::spread(key = per, value = 'A') %>% select(-ID) %>% 
+    select_at(.vars = 1:s, .funs = function(x){paste0('Per', x)}) %>% 
+    mutate_all(.funs = function(x) tidyr::replace_na(x, replace = 0)) %>% as.matrix
+  return(matrix)
+}
 
 ################################
 # Funcao da logverossimilhanca #
@@ -83,11 +94,7 @@ loglik  <-  function(par,out){
   dldb  <-  as.vector(dldp)*dpdb
   
   dpdrho  <-  -sqrt(c1)*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); dpdrho  <-  c(0, dpdrho)
-  dpdrho_df <- data.frame(dpdrho, per = c(1, per)) %>% 
-    mutate(ID = row_number())%>% 
-    tidyr::spread(key = per, value = dpdrho) %>% select(-ID) %>% 
-    select_at(.vars = 1:s, .funs = function(x){paste0('Per', x)}) %>% 
-    mutate_all(.funs = function(x) tidyr::replace_na(x, replace = 0)) %>% as.matrix
+  dpdrho_df <- permatrix(vector = dpdrho, period = per)
   dldrho  <-  dldp*dpdrho
   dldrho_m <- dldp*dpdrho_df
   
@@ -106,8 +113,8 @@ loglik  <-  function(par,out){
     d2ldb2  <-  d2ldb2 + d2ldp2[t]*dpdb[t,]%*%t(dpdb[t,])
   }
   
-  d2pdrhodvt0  <-  -.5*(c1^(-.5))*(1-2*theta[2:n])*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3)))
-  d2pdrhodvt0  <-  c(0,d2pdrhodvt0)
+  d2pdrhodvt0  <-  -.5*(c1^(-.5))*(1-2*theta[2:n])*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); d2pdrhodvt0  <-  c(0,d2pdrhodvt0);
+  d2pdrhodvt0 <- permatrix(vector = dpdrho, period = per)
   d2pdrhodvt1  <-  .5*sqrt(c1)*(c4-resp[2:n-1]*(c4-c5))
   d2pdrhodvt1  <-  c(0,d2pdrhodvt1)
   d2pdbdrho  <-  d2pdrhodvt0*dvt0db + d2pdrhodvt1*dvt1db
@@ -330,4 +337,3 @@ prev.MC <- function(beta, rho, newY, newX, LastY, LastX, corte0, corte1){
   pfn.MC <- 1-(espec.MC*(1-p))/((1-sens.MC)*p+espec.MC*(1-p))
   return(list(prev=classif.MC, pfp=pfp.MC, pfn=pfn.MC))
 }
-
