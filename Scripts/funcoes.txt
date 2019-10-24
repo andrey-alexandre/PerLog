@@ -32,11 +32,11 @@ predi <-  function(beta.vet,rho,covar,resp, li=0.000000001, ls=0.999999999){
 #######################################
 # Cria a matriz de derivada periódica #
 #######################################
-permatrix <- function(vector, period){
-  matrix <- data.frame(A = vector, per = c(1, period)) %>% 
+permatrix <- function(vector, period_vec, period){
+  matrix <- data.frame(A = vector, per = c(1, period_vec)) %>% 
     mutate(ID = row_number())%>% 
     tidyr::spread(key = per, value = 'A') %>% select(-ID) %>% 
-    select_at(.vars = 1:s, .funs = function(x){paste0('Per', x)}) %>% 
+    select_at(.vars = 1:period, .funs = function(x){paste0('Per', x)}) %>% 
     mutate_all(.funs = function(x) tidyr::replace_na(x, replace = 0)) %>% as.matrix
   return(matrix)
 }
@@ -94,40 +94,37 @@ loglik  <-  function(par,out){
   dldb  <-  as.vector(dldp)*dpdb
   
   dpdrho  <-  -sqrt(c1)*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); dpdrho  <-  c(0, dpdrho)
-  dpdrho_df <- permatrix(vector = dpdrho, period = per)
+  dpdrho <- permatrix(vector = dpdrho, period_vec = per, period = s)
   dldrho  <-  dldp*dpdrho
-  dldrho_m <- dldp*dpdrho_df
   
   # gradient
-  grad  <-  c(colSums(dldb), colSums(dldrho_m))
+  grad  <-  c(colSums(dldb), colSums(dldrho))
   
   #hessian
   d2ldp2  <-  -resp/(p^2)-(1-resp)/((1-p)^2)
-  d2ldrho2  <-  matrix(0, s, s)
-  for (t in 1:ceiling(n/s)) {
-    d2ldrho2  <-  d2ldrho2 + d2ldp2[t]*dpdrho_df[t,]%*%t(dpdrho_df[t,])
+  d2ldrho2  <-  array(0, dim = c(s, s, n))
+  for (t in 1:n) {
+    d2ldrho2[ , ,t]  <-  d2ldp2[t]*dpdrho[t,]%*%t(dpdrho[t,])
   }
   
-  d2ldb2  <-  matrix(0, k, k)
+  d2ldb2  <- array(0, dim = c(k, k, n))
   for (t in 1:n) {
-    d2ldb2  <-  d2ldb2 + d2ldp2[t]*dpdb[t,]%*%t(dpdb[t,])
+    d2ldb2[ , , t]  <- d2ldp2[t]*dpdb[t,]%*%t(dpdb[t,])
   }
   
   d2pdrhodvt0  <-  -.5*(c1^(-.5))*(1-2*theta[2:n])*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); d2pdrhodvt0  <-  c(0,d2pdrhodvt0);
-  d2pdrhodvt0 <- permatrix(vector = dpdrho, period = per)
-  d2pdrhodvt1  <-  .5*sqrt(c1)*(c4-resp[2:n-1]*(c4-c5))
-  d2pdrhodvt1  <-  c(0,d2pdrhodvt1)
-  d2pdbdrho  <-  d2pdrhodvt0*dvt0db + d2pdrhodvt1*dvt1db
+  d2pdrhodvt0 <- permatrix(vector = d2pdrhodvt0, period_vec = per, period = s)
+  d2pdrhodvt1  <-  .5*sqrt(c1)*(c4-resp[2:n-1]*(c4-c5)); d2pdrhodvt1  <-  c(0,d2pdrhodvt1);
+  d2pdrhodvt1 <- permatrix(vector = d2pdrhodvt1, period_vec = per, period = s)
   
-  d2ldbdrho  <-  as.vector(d2ldp2)*dpdb*dpdrho + as.vector(dldp)*d2pdbdrho
-  d2ldbdrho <- 
-    data.frame(d2ldbdrho, per = c(1, per)) %>% 
-    group_by(per) %>% 
-    mutate(ID = row_number()) %>% 
-    summarise_all(sum) %>% select(-ID, - per)
+  d2ldbdrho  <-  matrix(0, s, k)
+  for (t in 1:n) {
+    d2pdbdrho  <-  t(d2pdrhodvt0)[,t, drop = F]%*%dvt0db[t, , drop = F] + t(d2pdrhodvt1)[,t, drop = F]%*%dvt1db[t, , drop = F]
+    d2ldbdrho  <-  d2ldbdrho + as.vector(d2ldp2)[t] * t(dpdrho)[, t, drop = F] %*% dpdb[t, , drop = F] + as.vector(dldp)[t]*d2pdbdrho
+  }
   
-  hess  <-  cbind(rbind(d2ldb2, d2ldbdrho), 
-                  rbind( t(d2ldbdrho), d2ldrho2))
+  hess  <-  cbind(rbind(rowSums(x = d2ldb2, dims = 2), d2ldbdrho), 
+                  rbind( t(d2ldbdrho), rowSums(x = d2ldrho2, dims = 2)))
   
   logver <-  -sum(resp*log(p/(1-p))+log(1-p))
   attr(logver, 'gradient')  <-  -grad/n
