@@ -4,10 +4,11 @@ folder  <-  "C:/Users/Andrey/Projetos/PerLog/Scripts/"
 #folder <- 'C:/Users/Andrey/Documents/Andrey/TCC/'
 # PC Casa Alessandro
 #folder <- '/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/'
-source(paste(folder, 'funcoes.txt', sep = ''))
+
 
 LOOP <- expand.grid(n = c(100, 400), rho1 = c(.8, -.5), rho1 = c(-.4, .6), rho1 = c(.8, -.5))
-function(PAR){
+A <- function(PAR){
+  source('C:/Users/Andrey/Projetos/PerLog/Scripts/funcoes.txt')
   # simulacao
   n <- PAR[1]; k <- 5; rho <- unlist(PAR[-1]); beta <- rep(0.5, k);n.desc <- 50;m <- n+n.desc; pfn.target <- .05
   X1 <- cbind(1, matrix(runif(n = (m*(k-1)), min = -1, max = 1), m, (k-1)))
@@ -26,7 +27,6 @@ function(PAR){
   r <- 1
   
   ct.fim.vet <- prob <-  fit_MCvet <- y.desc <- list()
-  set.seed(555)
   while(r <= REP){
     cat('Repl.', r)
     ytotal <- gen(X = X1, beta = beta, rho = rho)
@@ -89,10 +89,10 @@ function(PAR){
   rownames(pf_mat) <- c('PFP - insample','PFN - insample', 'PFP - out','PFN - out')
   colnames(pf_mat) <- c('GLM','MC')
   
-  Bias <- cbind(c(colMeans(est_glm)-beta, rep(NA, length(rho))), (colMeans(est_MC, na.rm = T)-c(beta, rho)))
-  EP <- cbind(c(sqrt(colMeans(est_glm^2)-colMeans(est_glm)^2), rep(NA, length(rho))), sqrt(colMeans(est_MC^2, na.rm = T)-colMeans(est_MC, na.rm = T)^2))
+  Bias <- cbind(c(colMeans(est_glm)-beta, rep(NA, length(rho))), (colMeans(est_MC)-c(beta, rho)))
+  EP <- cbind(c(sqrt(colMeans(est_glm^2)-colMeans(est_glm)^2), rep(NA, length(rho))), sqrt(colMeans(est_MC^2)-colMeans(est_MC)^2))
   RMSE <- sqrt(Bias^2+EP^2)
-  mean.std <- cbind(c(colMeans(std_glm), rep(NA, length(rho))), colMeans(std_MC, na.rm = T))
+  mean.std <- cbind(c(colMeans(std_glm), rep(NA, length(rho))), colMeans(std_MC))
   rownames(Bias) <- rownames(EP) <- rownames(RMSE) <- rownames(mean.std) <- names(colMeans(est_MC))
   mat_Bias_RMSE <- cbind(Bias, RMSE); colnames(mat_Bias_RMSE) <- c('Bias - GLM','Bias - MC', 'RMSE - GLM','RMSE - MC')
   
@@ -105,8 +105,11 @@ function(PAR){
                                'PF - Matriz' = pf_mat,
                                'Bias e RMSE' = mat_Bias_RMSE,
                                'Matriz de EP' = mat.EP ))
-  names(resultado) <- paste('n = ', n, " e rho's = (", paste(rho, collapse = ', '), ")")
-  Resultados <- append(Resultados, resultado)
-  saveRDS(object = Resultados, file = "C:/Users/Andrey/Projetos/PerLog/Dados/Resultados.rds")
+  names(resultado) <- paste0('n = ', n, " e rho's = (", paste(rho, collapse = ', '), ")")
+  return(resultado)
 }
 
+set.seed(555)
+cl <- makeCluster(getOption("cl.cores", 16))
+system.time(RESULTS <- parApply(cl = cl, LOOP, 1, A))
+stopCluster(cl)
