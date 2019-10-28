@@ -119,13 +119,13 @@ loglik  <-  function(par,out){
     d2pdbdrho[ , , t]  <- t(dvt0db)[,t, drop = F]%*%d2pdrhodvt0[t, , drop = F] + t(dvt1db)[,t, drop = F]%*% d2pdrhodvt1[t, , drop = F]
   }
   
-  d2ldbdrho  <-  matrix(0, k, s)
+  d2ldbdrho  <-  array(0, dim = c(k, s, n))
   for (t in 1:n) {
-    d2ldbdrho  <-  d2ldbdrho + as.vector(d2ldp2)[t] * t(dpdb)[, t, drop = F] %*%  dpdrho[t, , drop = F] + as.vector(dldp)[t]*d2pdbdrho[, , t]
+    d2ldbdrho[ , , t]  <- as.vector(d2ldp2)[t] * t(dpdb)[, t, drop = F] %*%  dpdrho[t, , drop = F] + as.vector(dldp)[t]*d2pdbdrho[, , t]
   }
   
-  hess  <-  cbind(rbind(rowSums(x = d2ldb2, dims = 2), t(d2ldbdrho)), 
-                  rbind( d2ldbdrho, rowSums(x = d2ldrho2, dims = 2)))
+  hess  <-  cbind(rbind(rowSums(x = d2ldb2, dims = 2), t(rowSums(x = d2ldbdrho, dims = 2))), 
+                  rbind( rowSums(x = d2ldbdrho, dims = 2), rowSums(x = d2ldrho2, dims = 2)))
   
   logver <-  -sum(resp*log(p/(1-p))+log(1-p))
   attr(logver, 'gradient')  <-  -grad/n
@@ -145,7 +145,7 @@ logistic_MC <- function(resp, covar, par0, trace=2, li=0.000000001, ls=0.9999999
                   upper = c(rep(Inf, dim(covar)[2]), 0.999999), hessian = FALSE,
                   control = list(trace=trace))
   # seotim <- sqrt(diag(solve(otim$hessian)))
-  seotim  <-  sqrt(diag(solve(hess.loglik(par = otim$par, out = out))))
+  seotim  <- sqrt(ifelse(diag(solve(hess.loglik(par = otim$par, out = out))) < 0, li, diag(solve(hess.loglik(par = otim$par, out = out)))))
   mat.res <- cbind(otim$par, seotim, 2*(1-pnorm(abs(otim$par/seotim))))
   colnames(mat.res) <- c('Estimate','Std.Error','p-value')
   # row.names(mat.res)[dim(covar)[2]+1] <- 'lambda'
