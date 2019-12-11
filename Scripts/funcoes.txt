@@ -186,7 +186,7 @@ gen <- function(X, beta, rho, li=0.000000001, ls=0.999999999){
 min.pfp.MC <- function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.01),
                        pfn.target=.05, y, prob, li=0.000000001, ls=0.999999999){
   # INICIO FUNCAO
-  sens <- espec <- pfp <- pfn <- matrix(data = NA, nrow = length(corte0), ncol = length(corte1))
+  sens <- espec <- pfp <- pfn <- acc <- matrix(data = NA, nrow = length(corte0), ncol = length(corte1))
   n <- length(y)
   nenhum.menor.que.pfn.target=TRUE;pfp.min <- 1
   for(l in 1:length(corte0)){
@@ -205,11 +205,14 @@ min.pfp.MC <- function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.
         espec[l,j] <-  1-sens[l,j]                                                     
         pfp[l,j] <- A[1,]/sum(A[,1])
         pfn[l,j] <- A[2,]/sum(A[,1])
+        if(classif[2] == 0) acc[l,j] <- A[1,1]/sum(A)
+        if(classif[2] == 1) acc[l,j] <- A[2,1]/ sum(A)
       }else{                                                                   
         espec[l,j] <-  A[1,1]/sum(A[1,])
         sens[l,j] <-  A[2,2]/sum(A[2,])
         pfp[l,j] <- A[1,2]/sum(A[,2])
         pfn[l,j] <- A[2,1]/sum(A[,1])
+        acc[l,j] <- sum(diag(A))/sum(A)
       }
       # if((l==1)&(j==1)){pfp.min <- pfp[l,j]}
       if( (pfn[l,j]<=pfn.target) & (pfp[l,j]<pfp.min) ){
@@ -217,18 +220,19 @@ min.pfp.MC <- function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.
         corte1min <- corte1[j]
         pfp.min <- pfp[l,j]
         pfn.min <- pfn[l,j]
+        acc.min <- acc[l,j]
         nenhum.menor.que.pfn.target=FALSE
       }
     }
   }
   if(nenhum.menor.que.pfn.target){
     ind <- which(pfn == min(pfn), arr.ind = TRUE)[1,]; l <- ind[1]; j <- ind[2]
-    pfn.min <- pfn[l,j];pfp.min <- pfp[l,j]
+    pfn.min <- pfn[l,j];pfp.min <- pfp[l,j]; acc.min <- acc[l,j]
     corte0min <- corte0[l];corte1min <- corte1[j]
     warning(paste('Nao ha PFN < ',pfn.target,' (target)!\n Escolhendo PFP com PFN minimo!', sep=''))
   }
-  return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, corte0min=corte0min,
-              corte1min=corte1min))
+  return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, acc.min = acc.min,
+              corte0min=corte0min, corte1min=corte1min))
 }
 
 ##################
@@ -237,7 +241,7 @@ min.pfp.MC <- function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.
 
 min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
                         li=0.000000001, ls=0.999999999){
-  sens <- espec <- pfp <- pfn <- NULL
+  sens <- espec <- pfp <- pfn <- acc <- NULL
   pfn.min <- NULL
   nenhum.menor.que.pfn.target=TRUE;pfp.min <- 1
   for(j in 1:length(corte)){
@@ -249,16 +253,20 @@ min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
       espec[j] <-  1-sens[j]                                                     
       pfp[j] <- A[1,]/sum(A[,1])
       pfn[j] <- A[2,]/sum(A[,1])
+      if(classif[2] == 0) acc[j] <- A[1,1]/sum(A)
+      if(classif[2] == 1) acc[j] <- A[2,1]/ sum(A)
     }else{                                                                   
       espec[j] <-  A[1,1]/sum(A[1,])
       sens[j] <-  A[2,2]/sum(A[2,])
       pfp[j] <- A[1,2]/sum(A[,2])
       pfn[j] <- A[2,1]/sum(A[,1])
+      acc[j] <- sum(diag(A))/sum(A)
     }
     if( (pfn[j]<=pfn.target) & (pfp[j]<pfp.min) ){
       cortemin <- corte[j]
       pfp.min <- pfp[j]
       pfn.min <- pfn[j]
+      acc.min <- acc[j]
       nenhum.menor.que.pfn.target=FALSE
     }
   }
@@ -266,9 +274,11 @@ min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
     pfn.min <- min(pfn)
     cortemin <- corte[which.min(pfn)]
     pfp.min <- pfp[which.min(pfn)]
+    acc.min <- acc[which.min(pfn)]
     warning(paste('Nao ha PFN < ',pfn.target,' (target)!\n Escolhendo PFP com PFN minimo!', sep=''))
   }
-  return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, cortemin=cortemin))
+  return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, acc.min = acc.min,
+              cortemin=cortemin))
 }
 
 ############
@@ -285,12 +295,14 @@ prev.glm <- function(fit, newY=NULL, newX, corte, li=0.000000001, ls=0.999999999
   if(!is.null(newY)){
     A <- table(newY,classif.glm)
     if(ncol(A)==1){
-      if(classif.glm[1]==1) sens.glm <- 1
-      if(classif.glm[1]==0) sens.glm <- 0
+      if(classif.glm[1]==1) sens.glm <- 1; acc.glm <- A[2,1]/sum(A)
+      if(classif.glm[1]==0) sens.glm <- 0; acc.glm <- A[1,1]/ sum(A)
       espec.glm <- 1-sens.glm
+      
     }else{
       espec.glm <-  A[1,1]/sum(A[1,])
       sens.glm <-  A[2,2]/sum(A[2,])
+      acc.glm <- sum(diag(A))/sum(A)
     }
     if(sens.glm==0){sens.glm <- li}
     if(sens.glm==1){sens.glm <- ls}
@@ -300,7 +312,7 @@ prev.glm <- function(fit, newY=NULL, newX, corte, li=0.000000001, ls=0.999999999
     phat.glm <- mean(classif.glm)
     pfp.glm <- 1-(p*sens.glm)/(p*sens.glm+(1-p)*(1-espec.glm))
     pfn.glm <- 1-(espec.glm*(1-p))/((1-sens.glm)*p+espec.glm*(1-p))
-    return(list(prev=classif.glm, pfp=pfp.glm, pfn=pfn.glm))
+    return(list(prev=classif.glm, pfp=pfp.glm, pfn=pfn.glm, acc = acc.glm))
   }
   else{
     return(list(prev=classif.glm))
@@ -323,15 +335,18 @@ prev.MC <- function(beta, rho, newY, newX, LastY, LastX, corte0, corte1){
   A <- table(newY,classif.MC) 
   if(ncol(A)==1){                                                 
     sens.MC <- classif.MC[1]                                                      
-    espec.MC <-  1-sens.MC                                                  
+    espec.MC <-  1-sens.MC
+    if(classif[2] == 0) acc.MC <- A[1,1]/sum(A)
+    if(classif[2] == 1) acc.MC <- A[2,1]/ sum(A)
   }else{
     # cortemin <- corte
     espec.MC <-  A[1,1]/sum(A[1,])                                             
-    sens.MC <-  A[2,2]/sum(A[2,])                                              
+    sens.MC <-  A[2,2]/sum(A[2,])
+    acc.MC <- sum(diag(A))/sum(A)
   }
   p <- mean(newY)
   phat.MC <- mean(classif.MC)
   pfp.MC <- 1-(p*sens.MC)/(p*sens.MC+(1-p)*(1-espec.MC))
   pfn.MC <- 1-(espec.MC*(1-p))/((1-sens.MC)*p+espec.MC*(1-p))
-  return(list(prev=classif.MC, pfp=pfp.MC, pfn=pfn.MC))
+  return(list(prev=classif.MC, pfp=pfp.MC, pfn=pfn.MC, acc = acc.MC))
 }

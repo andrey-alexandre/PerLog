@@ -7,23 +7,44 @@ folder  <-  "C:/Users/Andrey/Projetos/PerLog/Scripts/"
 source(paste(folder, 'funcoes.txt', sep = ''))
 
 # simulacao
-n <- 3*40; k <- 5; rho <- c(-0.9, -0.6, -.4); beta <- rep(0.5, k);n.desc <- 50;m <- n+n.desc; pfn.target <- .05
-X1 <- cbind(1, matrix(runif(n = (m*(k-1)), min = -1, max = 1), m, (k-1)))
+n <- 7*40; k <- 2; rho <- c(0.4, 0.5, 0.2, 0.4, 0.3, 0.5, 0.45); 
+beta <- rep(0.5, k);n.desc <- 50;m <- n+n.desc; pfn.target <- .05
+X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -5, max = 5), m, (k-1)))
 colnames(X1) <- c('Intercept', kronecker("X_", 1:(k-1), paste, sep=''))
 X <- X1[1:n,]; Xprev <-  X1[(n+1):m,]
 REP <- 1000
 
 est_glm <- yhat_glm <- std_glm <- est_MC <- std_MC <- fit_glmvet <- corte0 <- corte1 <- corte <- NULL
-pfp.insample.MC <- pfp.insample.glm <- pfn.insample.MC <- pfn.insample.glm <- NULL
-pfp.glm <- pfn.glm <- pfp.MC <- pfn.MC <- NULL
+pfp.insample.MC <- pfp.insample.glm <- pfn.insample.MC <- pfn.insample.glm <- acc.insample.MC <- acc.insample.glm <- NULL
+pfp.glm <- pfn.glm <- acc.glm <- pfp.MC <- pfn.MC <- acc.MC <- NULL
 fit_glmvet <- fit_MCvet <- list()
 est_glm <- std_glm <- matrix(nrow = REP, ncol = k)
 est_MC <- std_MC <- matrix(nrow = REP, ncol = (k+length(rho)))
 
-r <- 1
+# Leitura necessária caso haja problemas com a sessão
+{
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.insample.glm.csv')) pfp.insample.glm <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.insample.glm.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.insample.MC.csv')) pfp.insample.MC <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.insample.MC.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.insample.glm.csv')) pfn.insample.glm <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.insample.glm.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.insample.MC.csv')) pfn.insample.MC <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.insample.MC.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.insample.glm.csv')) acc.insample.glm <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.insample.glm.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.insample.MC.csv')) acc.insample.MC <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.insample.MC.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.glm.csv')) pfp.glm <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.glm.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.MC.csv')) pfp.MC <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.MC.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.glm.csv')) pfn.glm <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.glm.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.MC.csv')) pfn.MC <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.MC.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.glm.csv')) acc.glm <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.glm.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.MC.csv')) acc.MC <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.MC.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_est_glm.csv')) est_glm <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_est_glm.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_est_MC.csv')) est_MC <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_est_MC.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_std_glm.csv')) std_glm <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_std_glm.csv', append = T, row.names = F)
+  if(file.exists('C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_std_MC.csv')) std_MC <- read.csv(file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_std_MC.csv', append = T, row.names = F)
+}
+
+r <- 1 + length(pfp.insample.glm)
 
 ct.fim.vet <- prob <-  fit_MCvet <- y.desc <- list()
-set.seed(555)
+set.seed(444)
 while(r <= REP){
   cat('Repl.', r)
   ytotal <- gen(X = X1, beta = beta, rho = rho)
@@ -53,22 +74,42 @@ while(r <= REP){
     in.sample.glm <- min.pfp.glm(y = y, prob = prob.glm, pfn.target = pfn.target)
     pfp.insample.glm[r] <- in.sample.glm$pfp.min
     pfn.insample.glm[r] <- in.sample.glm$pfn.min
+    acc.insample.glm[r] <- in.sample.glm$acc.min
     corte[r] <- in.sample.glm$cortemin
     in.sample.MC <- min.pfp.MC(y = y, prob = prob.MC, pfn.target = pfn.target)
     pfp.insample.MC[r] <- in.sample.MC$pfp.min
     pfn.insample.MC[r] <- in.sample.MC$pfn.min
+    acc.insample.MC[r] <- in.sample.MC$acc.min
     corte0[r] <- in.sample.MC$corte0min
     corte1[r] <- in.sample.MC$corte1min
     
     pr.glm <- prev.glm(fit = fit_glmvet[[r]], newY = y.desc[[r]], newX = Xprev,
                      corte = corte[r])
-    pfp.glm[r] <- pr.glm$pfp; pfn.glm[r] <- pr.glm$pfn
+    pfp.glm[r] <- pr.glm$pfp; pfn.glm[r] <- pr.glm$pfn; acc.glm[r] <- pr.glm$acc
     pr.MC <- prev.MC(beta = fit_MCvet[[r]][1:k,1],
                    rho  = fit_MCvet[[r]][(k+length(rho)),1],
                    newY = y.desc[[r]], newX = Xprev,
                    LastY= y[n], LastX = X[n,], corte0 = corte0[r], corte1 = corte1[r])
-    pfp.MC[r] <- pr.MC$pfp; pfn.MC[r] <- pr.MC$pfn
-    
+    pfp.MC[r] <- pr.MC$pfp; pfn.MC[r] <- pr.MC$pfn; acc.MC[r] <- pr.MC$acc
+    #Escrita das variáveis 
+    {
+      write.csv(x = pfp.insample.glm, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.insample.glm.csv', append = T, row.names = F)
+      write.csv(x = pfp.insample.MC, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.insample.MC.csv', append = T, row.names = F)
+      write.csv(x = pfn.insample.glm, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.insample.glm.csv', append = T, row.names = F)
+      write.csv(x = pfn.insample.MC, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.insample.MC.csv', append = T, row.names = F)
+      write.csv(x = acc.insample.glm, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.insample.glm.csv', append = T, row.names = F)
+      write.csv(x = acc.insample.MC, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.insample.MC.csv', append = T, row.names = F)
+      write.csv(x = pfp.glm, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.glm.csv', append = T, row.names = F)
+      write.csv(x = pfp.MC, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfp.MC.csv', append = T, row.names = F)
+      write.csv(x = pfn.glm, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.glm.csv', append = T, row.names = F)
+      write.csv(x = pfn.MC, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_pfn.MC.csv', append = T, row.names = F)
+      write.csv(x = acc.glm, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.glm.csv', append = T, row.names = F)
+      write.csv(x = acc.MC, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_acc.MC.csv', append = T, row.names = F)
+      write.csv(x = est_glm, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_est_glm.csv', append = T, row.names = F)
+      write.csv(x = est_MC, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_est_MC.csv', append = T, row.names = F)
+      write.csv(x = std_glm, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_std_glm.csv', append = T, row.names = F)
+      write.csv(x = std_MC, file = 'C:/Users/Andrey/Projeto/PerLog/Scripts/parcial_std_MC.csv', append = T, row.names = F)
+    }
     r  <-  r+1
     cat('\n')
   }
@@ -78,12 +119,15 @@ while(r <= REP){
 }
 
 pf_insample_mat <- rbind(c(mean(pfp.insample.glm), mean(pfp.insample.MC)),
-                       c(mean(pfn.insample.glm), mean(pfn.insample.MC)))
+                         c(mean(pfn.insample.glm), mean(pfn.insample.MC)),
+                         c(mean(acc.insample.glm), mean(acc.insample.MC)))
 pf_out_mat <- rbind(c(mean(pfp.glm), mean(pfp.MC)),
-                  c(mean(pfn.glm), mean(pfn.MC)))
+                    c(mean(pfn.glm), mean(pfn.MC)),
+                    c(mean(acc.glm), mean(acc.MC)))
 pf_mat <- rbind(pf_insample_mat, pf_out_mat)
-rownames(pf_mat) <- c('PFP - insample','PFN - insample', 'PFP - out','PFN - out')
+rownames(pf_mat) <- c('PFP - insample','PFN - insample','ACC - insample', 'PFP - out', 'PFN - out', 'ACC - out')
 colnames(pf_mat) <- c('GLM','MC')
+
 
 Bias <- cbind(c(colMeans(est_glm)-beta, rep(NA, length(rho))), (colMeans(est_MC)-c(beta, rho)))
 EP <- cbind(c(sqrt(colMeans(est_glm^2)-colMeans(est_glm)^2), rep(NA, length(rho))), sqrt(colMeans(est_MC^2)-colMeans(est_MC)^2))
@@ -96,9 +140,11 @@ mat.EP <- cbind(EP[,1], mean.std[,1], EP[,2], mean.std[,2])
 colnames(mat.EP) <- c('Emp. EP - GLM', 'Hes. EP - GLM', 'Emp. EP - MC', 'Hes. EP - MC')
 
 ### RESULTADOS PARA GUARDAR
-cat('n = ', n, 'rho = (', paste(rho, collapse = ', '), ')\n')
-sum(pfn.insample.glm>.05)/REP
-sum(pfn.insample.MC>.05)/REP
+paste0('n = ', n, ', rho = (', paste(rho, collapse = ', '), ')')
+PFN_IN_GLM <- sum(pfn.insample.glm>.05)/REP
+PFN_IN_MC <- sum(pfn.insample.MC>.05)/REP
 pf_mat
 mat_Bias_RMSE
 mat.EP
+
+save(list = c('PFN_IN_GLM', 'PFN_IN_MC', 'pf_mat', 'mat_Bias_RMSE', 'mat.EP'), file = paste(folder, 'resultadoA.rds', sep = ''))
