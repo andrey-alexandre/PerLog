@@ -1,4 +1,4 @@
-library(dplyr)
+library(dplyr, lib.loc = 'c:/Users/Andrey/Documents/R/win-library/3.6/')
 ##############
 # Predito MC #
 ##############
@@ -141,8 +141,8 @@ hess.loglik <- function(par,out) return(attr(loglik(par,out), 'hessian'))
 logistic_MC <- function(resp, covar, par0, trace=2, li=0.000000001, ls=0.999999999){
   out <- list(covar=covar, resp=resp, li=li, ls=ls)
   otim  <-  optim(par = par0, fn = loglik, gr = gr.loglik, out=out, method = "L-BFGS-B",
-                  lower = c(rep(-Inf, dim(covar)[2]), -0.999999),
-                  upper = c(rep(Inf, dim(covar)[2]), 0.999999), hessian = FALSE,
+                  lower = c(rep(-Inf, dim(covar)[2]), rep(-0.999999, length(par0) - dim(covar)[2])),
+                  upper = c(rep(Inf, dim(covar)[2]), rep(0.999999, length(par0) - dim(covar)[2])), hessian = FALSE,
                   control = list(trace=trace))
   # seotim <- sqrt(diag(solve(otim$hessian)))
   seotim  <- sqrt(ifelse(diag(solve(hess.loglik(par = otim$par, out = out))) < 0, li, diag(solve(hess.loglik(par = otim$par, out = out)))))
