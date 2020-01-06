@@ -1,4 +1,4 @@
-library(dplyr, lib.loc = 'c:/Users/Andrey/Documents/R/win-library/3.6/')
+library(dplyr)
 ##############
 # Predito MC #
 ##############
@@ -99,7 +99,7 @@ loglik  <-  function(par,out){
   
   #hessian
   d2ldp2  <-  -resp/(p^2)-(1-resp)/((1-p)^2)
-  d2ldrho2  <-  array(0, dim = c(s, s, n))
+      d2ldrho2  <-  array(0, dim = c(s, s, n))
   for (t in 1:n) {
     d2ldrho2[ , ,t]  <-  d2ldp2[t]*dpdrho[t,]%*%t(dpdrho[t,])
   }
@@ -145,7 +145,7 @@ logistic_MC <- function(resp, covar, par0, trace=2, li=0.000000001, ls=0.9999999
                   upper = c(rep(Inf, dim(covar)[2]), rep(0.999999, length(par0) - dim(covar)[2])), hessian = FALSE,
                   control = list(trace=trace))
   # seotim <- sqrt(diag(solve(otim$hessian)))
-  seotim  <- sqrt(ifelse(diag(solve(hess.loglik(par = otim$par, out = out))) < 0, li, diag(solve(hess.loglik(par = otim$par, out = out)))))
+  seotim  <- sqrt(diag(solve(hess.loglik(par = otim$par, out = out))))
   mat.res <- cbind(otim$par, seotim, 2*(1-pnorm(abs(otim$par/seotim))))
   colnames(mat.res) <- c('Estimate','Std.Error','p-value')
   # row.names(mat.res)[dim(covar)[2]+1] <- 'lambda'
