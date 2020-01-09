@@ -78,14 +78,15 @@ loglik  <-  function(par,out){
   
   p[p<=li] <- li;p[p>=ls] <- ls
   
-  dpdvt0  <-  1-.5*rho[per]*(c1^(-.5))*(1-2*theta[2:n])*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3)))
+  #dpdvt0  <-  1-.5*rho[per]*(c1^(-.5))*(1-2*theta[2:n])*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))) # Katiuski
+  dpdvt0  <-  1-.5*rho[per]*(c1^(-.5))*(c2^(-.5))*(1-2*theta[2:n])*(resp[2:n-1] + c2*(resp[2:n-1]-1)) # Andrey
   dpdvt1  <-  .5*rho[per]*sqrt(c1)*(c4-resp[2:n-1]*(c4-c5))
   dpdvt0  <-  c(1,dpdvt0)
   dpdvt1  <-  c(0,dpdvt1)
   
   dldp  <-  (resp-p)/(p*(1-p))
   dvt0db  <-  theta*(1-theta)*covar
-  dvt1db  <-  c1aux*covar
+  dvt1db  <-  c1aux*apply(X = covar, MARGIN = 2, FUN = lag);  dvt1db[1,] <- c(0, 0)  
   
   dpdb  <-  dpdvt0*dvt0db + dpdvt1*dvt1db
   dldb  <-  as.vector(dldp)*dpdb
@@ -93,13 +94,13 @@ loglik  <-  function(par,out){
   dpdrho  <-  -sqrt(c1)*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); dpdrho  <-  c(0, dpdrho)
   dpdrho <- permatrix(vector = dpdrho, period_vec = per, period = s)
   dldrho  <-  dldp*dpdrho
-  
+    
   # gradient
   grad  <-  c(colSums(dldb), colSums(dldrho))
   
   #hessian
   d2ldp2  <-  -resp/(p^2)-(1-resp)/((1-p)^2)
-      d2ldrho2  <-  array(0, dim = c(s, s, n))
+  d2ldrho2  <-  array(0, dim = c(s, s, n))
   for (t in 1:n) {
     d2ldrho2[ , ,t]  <-  d2ldp2[t]*dpdrho[t,]%*%t(dpdrho[t,])
   }
@@ -128,6 +129,7 @@ loglik  <-  function(par,out){
                   rbind( rowSums(x = d2ldbdrho, dims = 2), rowSums(x = d2ldrho2, dims = 2)))
   
   logver <-  -sum(resp*log(p/(1-p))+log(1-p))
+  # cat(logver,'\n')
   attr(logver, 'gradient')  <-  -grad/n
   attr(logver, 'hessian')  <-  -hess
   return(logver)
@@ -145,7 +147,7 @@ logistic_MC <- function(resp, covar, par0, trace=2, li=0.000000001, ls=0.9999999
                   upper = c(rep(Inf, dim(covar)[2]), rep(0.999999, length(par0) - dim(covar)[2])), hessian = FALSE,
                   control = list(trace=trace))
   # seotim <- sqrt(diag(solve(otim$hessian)))
-  seotim  <- sqrt(diag(solve(hess.loglik(par = otim$par, out = out))))
+  seotim  <- sqrt(ifelse(diag(solve(hess.loglik(par = otim$par, out = out))) < 0, li, diag(solve(hess.loglik(par = otim$par, out = out)))))
   mat.res <- cbind(otim$par, seotim, 2*(1-pnorm(abs(otim$par/seotim))))
   colnames(mat.res) <- c('Estimate','Std.Error','p-value')
   # row.names(mat.res)[dim(covar)[2]+1] <- 'lambda'
@@ -160,7 +162,7 @@ gen <- function(X, beta, rho, li=0.000000001, ls=0.999999999){
   n <- dim(X)[1]
   s <- length(rho)
   theta <- p <- NULL
-
+  
   theta <- exp(X%*%beta)/(1 + exp(X%*%beta))
   theta[theta<=li] <- li
   theta[theta>=ls] <- ls
