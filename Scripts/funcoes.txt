@@ -79,19 +79,21 @@ loglik  <-  function(par,out){
   p[p<=li] <- li;p[p>=ls] <- ls
   
   #dpdvt0  <-  1-.5*rho[per]*(c1^(-.5))*(1-2*theta[2:n])*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))) # Katiuski
-  dpdvt0  <-  1-.5*rho[per]*(c1^(-.5))*(c2^(-.5))*(1-2*theta[2:n])*(resp[2:n-1] + c2*(resp[2:n-1]-1)) # Andrey
-  dpdvt1  <-  .5*rho[per]*sqrt(c1)*(c4-resp[2:n-1]*(c4-c5))
+  dpdvt0  <-  1-.5 * rho[per] * (c2^(-.5)) * (c1^(-.5)) * (resp[2:n-1] + c2 * (resp[2:n-1]-1)) # Andrey
+  #dpdvt1  <-  .5*rho[per]*sqrt(c1)*(c4-resp[2:n-1]*(c4-c5)) # Katiuski
+  dpdvt1  <-  .5 * rho[per] * resp[2:n-1] * (c1^(.5)) * ( ( (2 * theta[2:n-1]-1) * sqrt(c1aux[-1])  ) / (c1aux[-1]^2) ) - .5 * rho[per] * (c1^(-.5)) * ( theta[2:n] / ((1-theta[2:n-1])) )
   dpdvt0  <-  c(1,dpdvt0)
   dpdvt1  <-  c(0,dpdvt1)
   
   dldp  <-  (resp-p)/(p*(1-p))
   dvt0db  <-  theta*(1-theta)*covar
-  dvt1db  <-  c1aux*apply(X = covar, MARGIN = 2, FUN = lag);  dvt1db[1,] <- c(0, 0)  
+  dvt1db  <-  c1aux*apply(X = covar, MARGIN = 2, FUN = lag);  dvt1db[1,] <- rep(0, k)  
   
   dpdb  <-  dpdvt0*dvt0db + dpdvt1*dvt1db
   dldb  <-  as.vector(dldp)*dpdb
   
-  dpdrho  <-  -sqrt(c1)*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); dpdrho  <-  c(0, dpdrho)
+  #dpdrho  <-  -sqrt(c1)*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); dpdrho  <-  c(0, dpdrho) # Katiuski
+  dpdrho  <- sqrt(c1) * ( (resp[2:n-1]-1) * c2 + resp[2:n-1] * c3 ); dpdrho  <-  c(0, dpdrho) # Andrey
   dpdrho <- permatrix(vector = dpdrho, period_vec = per, period = s)
   dldrho  <-  dldp*dpdrho
     
@@ -99,7 +101,9 @@ loglik  <-  function(par,out){
   grad  <-  c(colSums(dldb), colSums(dldrho))
   
   #hessian
-  d2ldp2  <-  -resp/(p^2)-(1-resp)/((1-p)^2)
+  #d2ldp2  <-  -resp/(p^2)-(1-resp)/((1-p)^2) # Katiuski
+  d2ldp2  <-  - ( p^2 - 2 * p * resp ) / ( (1-p)^2 * p^2 ) # Andrey
+  
   d2ldrho2  <-  array(0, dim = c(s, s, n))
   for (t in 1:n) {
     d2ldrho2[ , ,t]  <-  d2ldp2[t]*dpdrho[t,]%*%t(dpdrho[t,])
@@ -110,9 +114,11 @@ loglik  <-  function(par,out){
     d2ldb2[ , , t]  <- d2ldp2[t]*dpdb[t,]%*%t(dpdb[t,])
   }
   
-  d2pdrhodvt0  <-  -.5*(c1^(-.5))*(1-2*theta[2:n])*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); d2pdrhodvt0  <-  c(0,d2pdrhodvt0);
+  # d2pdrhodvt0  <-  -.5*(c1^(-.5))*(1-2*theta[2:n])*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3))); d2pdrhodvt0  <-  c(0,d2pdrhodvt0); # Katiuski
+  d2pdrhodvt0 <- .5 * ( (1 - 2 *  theta[2:n]) / sqrt(c1) ) * ( resp[2:n-1] * ( sqrt(c2) + sqrt(c3) ) -  theta[2:n-1] / sqrt(c1aux[-1]) ); d2pdrhodvt0 <- c(0, d2pdrhodvt0); # Andrey
   d2pdrhodvt0 <- permatrix(vector = d2pdrhodvt0, period_vec = per, period = s)
-  d2pdrhodvt1  <-  .5*sqrt(c1)*(c4-resp[2:n-1]*(c4-c5)); d2pdrhodvt1  <-  c(0,d2pdrhodvt1);
+  # d2pdrhodvt1  <-  .5*sqrt(c1)*(c4-resp[2:n-1]*(c4-c5)); d2pdrhodvt1  <-  c(0,d2pdrhodvt1); # Katiuski
+  d2pdrhodvt1  <-  .5 * ( sqrt(c1) / c1aux[-1] ) * ( resp[2:n-1] * sqrt(c3) + (1 - resp[2:n-1]) * sqrt(c2) ); d2pdrhodvt1  <-  c(0,d2pdrhodvt1); # Katiuski
   d2pdrhodvt1 <- permatrix(vector = d2pdrhodvt1, period_vec = per, period = s)
   
   d2pdbdrho  <- array(0, dim = c(k, s, n))
