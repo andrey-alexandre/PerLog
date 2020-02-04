@@ -120,11 +120,27 @@ loglik  <-  function(par,out){
   # dpdrho  <- sqrt(c1) * ( (resp[2:n-1]-1) * c2 + resp[2:n-1] * c3 ); dpdrho  <-  c(0, dpdrho) # Andrey
   # dpdrho <- permatrix(vector = dpdrho, period_vec = per, period = s)
   # dldrho  <-  dldp*dpdrho
-    
+  
   # gradient
   grad  <-  c(colSums(dldb), colSums(dldr))
   
-  # #hessian
+  #hessian
+  d2ldp2 <-  - ( p^2 - 2 * p * resp ) / ( (1-p)^2 * p^2 ); d2ldp2 <- d2ldp2[2:n]
+  
+  d2ldr2 <- d2ldp2 * dpdr ^ 2
+  
+  d2Bdv02 <- - B * (c1 ^ -1) * ( 1 + .25 * c1 * (1 - 2 * theta[2:n]) ^ 2 )
+  d2pdv02 <- rho[per]*(resp[2:n-1]-theta[2:n-1])*d2Bdv02
+  
+  d2Bdv12 <- B * (c1aux[-1] ^ -1) *  (1 + .75 * (c1aux[-1] ^ -1) * (1 - 2 * theta[2:n-1]) ^ 2 )  
+  d2pdv12 <- rho[per]*( d2Bdv12 * (resp[2:n-1]-theta[2:n-1]) - 2 * dBdv1 )
+  
+  d2Bdv0dv1 <- -.25 * B * (A ^ -2) * (1 - 2 * resp[2:n]) * (1 - 2 * resp[2:n-1])
+  d2pdv0dv1 <- rho[per]*( d2Bdv0dv1 * (resp[2:n-1]-theta[2:n-1]) - dBdv0 )
+  
+  C <-  d2pdv02 * dv0db ^ 2 + 2 * d2pdv0dv1 * dv0db * dv1db + d2pdv12 * dv1db ^ 2
+  
+  d2ldb2 <- d2ldp2 * dpdb ^ 2 + dldp * C
   # #d2ldp2  <-  -resp/(p^2)-(1-resp)/((1-p)^2) # Katiuski
   # d2ldp2  <-  - ( p^2 - 2 * p * resp ) / ( (1-p)^2 * p^2 ) # Andrey
   # 
@@ -155,8 +171,9 @@ loglik  <-  function(par,out){
   #   d2ldbdrho[ , , t]  <- as.vector(d2ldp2)[t] * t(dpdb)[, t, drop = F] %*%  dpdrho[t, , drop = F] + as.vector(dldp)[t]*d2pdbdrho[, , t]
   # }
   # 
-  # hess  <-  cbind(rbind(rowSums(x = d2ldb2, dims = 2), t(rowSums(x = d2ldbdrho, dims = 2))), 
-  #                 rbind( rowSums(x = d2ldbdrho, dims = 2), rowSums(x = d2ldrho2, dims = 2)))
+  d2ldbdr <- matrix(1, ncol = 2)
+  hess  <-  cbind(rbind(colSums(x = d2ldb2), t(colSums(x = d2ldbdr))),
+                  rbind( colSums(x = d2ldbdr), colSums(x = d2ldr2)))
   # 
   logver <-  -sum(resp[2:n]*log(p[2:n]/(1-p[2:n]))+log(1-p[2:n]))
   # # cat(logver,'\n')
