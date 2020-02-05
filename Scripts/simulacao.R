@@ -4,7 +4,7 @@ folder  <-  "/home/andrey/Projetos/PerLog/Scripts/"
 #folder <- 'C:/Users/Andrey/Documents/Andrey/TCC/'
 # PC Casa Alessandro
 #folder <- '/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/'
-source(paste(folder, 'funcoes.txt', sep = ''))
+source(paste(folder, 'funcoes.R', sep = ''))
 source(paste(folder, 'FuncKat.R', sep = ''))
 # arg <- commandArgs(trailingOnly = T)
 # arg <- c(200, round(sin(2*pi*(1:7)/15)/2, 2), 50)
