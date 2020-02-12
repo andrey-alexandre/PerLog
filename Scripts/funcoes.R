@@ -82,6 +82,7 @@ loglik  <-  function(par,out){
   p[p<=li] <- li;p[p>=ls] <- ls
   
   dldp <- ((resp - p)/(p*(1-p)))[2:n]
+  dldp_aux <- ((resp[1] - p[1])/(p[1]*(1-p[1])))
   
   dBdv0 <- .5*(1-2*theta[2:n])/A
   dBdv1 <- -.5*(1-2*theta[2:n-1])*B/c1aux[-1]
@@ -90,6 +91,8 @@ loglik  <-  function(par,out){
   dpdv1 <- rho[per]*(dBdv1*(resp[2:n-1]-theta[2:n-1])-B)
   
   dv0db <- c1*covar[2:n,]
+  dv0db_aux <- theta[1]*(1-theta[1])*covar[1,,drop=FALSE]
+  
   dv1db <- c1aux[-1]*covar[2:n-1,]
   
   dpdb <- dpdv0*dv0db + dpdv1*dv1db #b = beta, B = B mesmo
@@ -126,38 +129,50 @@ loglik  <-  function(par,out){
   
   #hessian
   # d2ldp2 <-  - ( 1 - p - p ^2) / ( (1-p)^2 * p^2 ); d2ldp2 <- d2ldp2[2:n-1]
-  d2ldp2 <- (resp[2:n] * (2 * p[2:n-1] - 1) * p[2:n-1]  - p[2:n-1] ^ 2)/(p[2:n-1]^2 * (1 - p[2:n-1]) ^ 2)
+  d2ldp2 <- (resp[2:n]*(2*p[2:n] - 1) - p[2:n]^2)/(p[2:n]^2*(1 - p[2:n])^2)
+  d2ldp2_aux <- (resp[1]*(2*p[1] - 1) - p[1]^2)/(p[1]^2*(1 - p[1])^2)
   
   d2ldr2 <- array(data = 0, dim = c(s, s, n-1))
   for(i in 2:n-1){
     d2ldr2[, , i] <-  d2ldp2[i] * t(dpdr[i, , drop = F]) %*% dpdr[i, , drop = F]
   }
   
-  d2Bdv02 <- - B * (c1 ^ -1) * ( 1 + .25 * c1 * (1 - 2 * theta[2:n]) ^ 2 )
+  d2Bdv02 <- - A^(-1) * ( 1 + .25 * (c1^(-1)) * (1 - 2 * theta[2:n]) ^ 2 )
   d2pdv02 <- rho[per]*(resp[2:n-1]-theta[2:n-1])*d2Bdv02
   
   d2Bdv12 <- B * (c1aux[-1] ^ -1) *  (1 + .75 * (c1aux[-1] ^ -1) * (1 - 2 * theta[2:n-1]) ^ 2 )  
   d2pdv12 <- rho[per]*( d2Bdv12 * (resp[2:n-1]-theta[2:n-1]) - 2 * dBdv1 )
   
-  d2Bdv0dv1 <- -.25 * B * (A ^ -2) * (1 - 2 * resp[2:n]) * (1 - 2 * resp[2:n-1])
+  d2Bdv0dv1 <- -.25 * (A^(-1)) * (c1aux[-1]^(-1))*(1 - 2 * theta[2:n]) * (1 - 2 * theta[2:n-1])
   d2pdv0dv1 <- rho[per]*( d2Bdv0dv1 * (resp[2:n-1]-theta[2:n-1]) - dBdv0 )
+  
   
   d2ldb2 <- C <-  array(data = 0, dim = c(k, k, n-1))
   for(i in 2:n-1){
-    C[, , i] <-  d2pdv02[i] * t(dv0db[i, , drop = F]) %*% dv0db[i, , drop = F] + 
-      2 * d2pdv0dv1[i] * t(dv0db[i, , drop = F]) %*% dv1db[i, , drop = F] + 
-      d2pdv12[i] * t(dv1db[i, , drop = F]) %*% dv1db[i, , drop = F]
-    
-    d2ldb2[, , i] <- d2ldp2[i] * t(dpdb[i, , drop = F]) %*% dpdb[i, , drop = F] + dldp[i] * C[, , i]
+    d2ldb2[, , i] <-
+      d2ldp2[i] * t(dpdb[i, , drop = F]) %*% dpdb[i, , drop = F] + #(I)
+      dldp[i] * ( #(II)
+        (t(dv0db[i, , drop = F]) %*% dv0db[i, , drop = F]) * d2pdv02[i] +
+          (t(dv0db[i, , drop = F]) %*% dv1db[i, , drop = F]) * d2pdv0dv1[i] +
+          (t(dv1db[i, , drop = F]) %*% dv0db[i, , drop = F]) * d2pdv0dv1[i] +
+          (t(dv1db[i, , drop = F]) %*% dv1db[i, , drop = F]) * d2pdv12[i] +
+          dpdv0[i] * theta[i+1]*(1-theta[i+1])*(1-2*theta[i+1])*(t(covar[i+1,,drop=FALSE])%*%covar[i+1,,drop=FALSE]) +
+          dpdv1[i] * theta[i]*(1-theta[i])*(1-2*theta[i])*(t(covar[i,,drop=FALSE])%*%covar[i,,drop=FALSE])
+      )
   }
   
   d2ldbdr <- array(data = 0, dim = c(k, s, n-1))
   for(i in 2:n-1){
-    d2ldbdr[, , i] <- t( (resp[2:n-1]-theta[2:n-1])[i] * dBdv0[i] * mat.aux[i, , drop = F] ) %*% dv0db[i, , drop = F] + 
-      t( ( (resp[2:n-1]-theta[2:n-1]) * dBdv1 - B )[i] * mat.aux[i, , drop = F]  )%*% dv1db[i, , drop = F]
+    # d2ldbdr[, , i] <- t( (resp[2:n-1]-theta[2:n-1])[i] * dBdv0[i] * mat.aux[i, , drop = F] ) %*% dv0db[i, , drop = F] + 
+    # t( ( (resp[2:n-1]-theta[2:n-1]) * dBdv1 - B )[i] * mat.aux[i, , drop = F]  )%*% dv1db[i, , drop = F]
+    d2ldbdr[, , i] <- d2ldp2[i] *(t(dpdb[i, , drop = F]) %*% dpdr[i, , drop = F]) +
+      dldp[i] * (
+        (resp[i] - theta[i])*dBdv0[i]*(t(dv0db[i,,drop=FALSE]) %*% mat.aux[i,,drop=FALSE]) +
+          ((resp[i] - theta[i])*dBdv1[i]-B[i])*(t(dv1db[i,,drop=FALSE]) %*% mat.aux[i,,drop=FALSE])
+      )
   }
-
-
+  
+  
   # #d2ldp2  <-  -resp/(p^2)-(1-resp)/((1-p)^2) # Katiuski
   # d2ldp2  <-  - ( p^2 - 2 * p * resp ) / ( (1-p)^2 * p^2 ) # Andrey
   # 
@@ -188,7 +203,7 @@ loglik  <-  function(par,out){
   #   d2ldbdrho[ , , t]  <- as.vector(d2ldp2)[t] * t(dpdb)[, t, drop = F] %*%  dpdrho[t, , drop = F] + as.vector(dldp)[t]*d2pdbdrho[, , t]
   # }
   # 
-  hess  <-  cbind(rbind(rowSums(x = d2ldb2, dims = 2), t(rowSums(x = d2ldbdr, dims = 2))),
+  hess  <-  cbind(rbind((rowSums(x = d2ldb2, dims = 2)), t(rowSums(x = d2ldbdr, dims = 2))),
                   rbind( rowSums(x = d2ldbdr, dims = 2), rowSums(x = d2ldr2, dims = 2)))
   # 
   logver <-  -sum(resp[2:n]*log(p[2:n]/(1-p[2:n]))+log(1-p[2:n]))
