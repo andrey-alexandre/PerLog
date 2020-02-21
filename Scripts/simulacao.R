@@ -5,16 +5,16 @@ folder  <-  "/home/andrey/Projetos/PerLog/Scripts/"
 # PC Casa Alessandro
 #folder <- '/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/'
 source(paste(folder, 'funcoes.R', sep = ''))
-source(paste(folder, 'FuncKat.R', sep = ''))
+# source(paste(folder, 'FuncKat.R', sep = ''))
 arg <- commandArgs(trailingOnly = T)
 # arg <- c(200, round(sin(2*pi*(1:7)/15)/2, 2), 50)
-arg <- c(280, .4, .5, .2, .4, .3, .5, .45, 1000, 'E')
+# arg <- c(280, 0, .4, .5, .2, .4, .3, .5, .45, 1000, 'Z')
 
 # simulacao
-n <- as.numeric(arg[1]); k <- 3; rho <- as.numeric(arg[-c(1,length(arg)-0:1)]);
-beta <- c(rep(0.5, k-1), 0);n.desc <- 50;m <- n+n.desc; pfn.target <- .05
-# X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -5, max = 5), m, (k-1)))
-X1 <- cbind(1, sin(2*pi*(1:m)/21), cos(2*pi*(1:m)/21))
+n <- as.numeric(arg[1]); k <- 2; rho <- as.numeric(arg[-c(1, 2,length(arg)-0:1)]);
+beta <- c(rep(0.5, k-1),  as.numeric(arg[2]));n.desc <- 50;m <- n+n.desc; pfn.target <- .05
+X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -1, max = 1), m, (k-1)))
+# X1 <- cbind(1, sin(2*pi*(1:m)/21))
 colnames(X1) <- c('Intercept', kronecker("X_", 1:(k-1), paste, sep=''))
 X <- X1[1:n,]; Xprev <-  X1[(n+1):m,]
 REP <- as.numeric(arg[length(arg)-1])
@@ -73,7 +73,7 @@ while(r <= REP){
   fit_glm <-  summary(fit_glm1)$coefficients
   #lambda <-  rbind(lambda, lassim$lambda)
   yhat_glm <- rbind(yhat_glm,fitted(fit_glm1))
-  fit_MC <- tryCatch(logistic_MC.kat(resp = y, covar = X, par0 = c(beta, mean(rho)), trace = 0),
+  fit_MC <- tryCatch(logistic_MC(resp = y, covar = X, par0 = c(beta, mean(rho)), trace = 0),
                      error = function(e){NULL})
   fit_MCvet[[r]] <- fit_MC
   # fit_MCP <- logistic_MCP(resp = y, covar = X, par0 = c(beta, rho), trace = 0)
@@ -92,7 +92,7 @@ while(r <= REP){
                        rho = fit_MCPvet[[r]][(1:length(rho)+k),1], covar=X, resp=y)
     
     prob.glm  <-   predict(object = fit_glmvet[[r]], newx = X, type=c("response"))
-    prob.MC <- predi.kat(beta.vet=fit_MCvet[[r]][1:k,1],
+    prob.MC <- predi(beta.vet=fit_MCvet[[r]][1:k,1],
                          rho = fit_MCPvet[[r]][(1+k),1], covar=X, resp=y)
     prob.MCP  <-  prob[[r]]
     in.sample.glm <- min.pfp.glm(y = y, prob = prob.glm, pfn.target = pfn.target)
@@ -100,12 +100,24 @@ while(r <= REP){
     pfn.insample.glm[r] <- in.sample.glm$pfn.min
     acc.insample.glm[r] <- in.sample.glm$acc.min
     corte[r] <- in.sample.glm$cortemin
-    in.sample.MC <- min.pfp.MC.kat(y = y, prob = prob.MC, pfn.target = pfn.target)
+    
+    pr.glm <- prev.glm(fit = fit_glmvet[[r]], newY = y.desc[[r]], newX = Xprev,
+                       corte = corte[r])
+    pfp.glm[r] <- pr.glm$pfp; pfn.glm[r] <- pr.glm$pfn; acc.glm[r] <- pr.glm$acc
+    
+    in.sample.MC <- min.pfp.MC(y = y, prob = prob.MC, pfn.target = pfn.target)
     pfp.insample.MC[r] <- in.sample.MC$pfp.min
     pfn.insample.MC[r] <- in.sample.MC$pfn.min
     acc.insample.MC[r] <- in.sample.MC$acc.min
     corte0[r] <- in.sample.MC$corte0min
     corte1[r] <- in.sample.MC$corte1min
+    
+    pr.MC <- prev.MC(beta = fit_MCvet[[r]][1:k,1],
+                     rho  = fit_MCvet[[r]][(k+1),1],
+                     newY = y.desc[[r]], newX = Xprev,
+                     LastY= y[n], LastX = X[n,], corte0 = corte0[r], corte1 = corte1[r])
+    pfp.MC[r] <- pr.MC$pfp; pfn.MC[r] <- pr.MC$pfn; acc.MC[r] <- pr.MC$acc
+    
     in.sample.MCP <- min.pfp.MC(y = y, prob = prob.MCP, pfn.target = pfn.target)
     pfp.insample.MCP[r] <- in.sample.MCP$pfp.min
     pfn.insample.MCP[r] <- in.sample.MCP$pfn.min
@@ -113,14 +125,6 @@ while(r <= REP){
     corte0[r] <- in.sample.MCP$corte0min
     corte1[r] <- in.sample.MCP$corte1min
     
-    pr.glm <- prev.glm(fit = fit_glmvet[[r]], newY = y.desc[[r]], newX = Xprev,
-                       corte = corte[r])
-    pfp.glm[r] <- pr.glm$pfp; pfn.glm[r] <- pr.glm$pfn; acc.glm[r] <- pr.glm$acc
-    pr.MC <- prev.MC.kat(beta = fit_MCvet[[r]][1:k,1],
-                         rho  = fit_MCvet[[r]][(k+1),1],
-                         newY = y.desc[[r]], newX = Xprev,
-                         LastY= y[n], LastX = X[n,], corte0 = corte0[r], corte1 = corte1[r])
-    pfp.MC[r] <- pr.MC$pfp; pfn.MC[r] <- pr.MC$pfn; acc.MC[r] <- pr.MC$acc
     pr.MCP <- prev.MC(beta = fit_MCPvet[[r]][1:k,1],
                       rho  = fit_MCPvet[[r]][(k+length(rho)),1],
                       newY = y.desc[[r]], newX = Xprev,
