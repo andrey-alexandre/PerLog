@@ -18,7 +18,7 @@ z_test <- function(x){
   
   return(H_0)
 }
-sim <- paste0('',LETTERS[5:15])
+sim <- paste0('A',LETTERS[5:15])
 
 Z <- data.frame(beta = seq(0, 1, along.with = sim), glm = 0, MC = 0, MCP = 0)
 for(i in seq_along(sim)){
@@ -29,7 +29,7 @@ for(i in seq_along(sim)){
   est_MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', sim[i] ,'/parcial_est_MC.csv'), stringsAsFactors = F, header = F)[,2]
   est_MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', sim[i] ,'/parcial_est_MCP.csv'), stringsAsFactors = F, header = F)[,2]
   
-  if(sim[i] == 'E'){
+  if(sim[i] == 'AE'){
     z_glm_0 <- est_glm/std_glm
     Z[i,2] <- mean(abs(z_glm_0) > qnorm(.975)) 
   }else{
@@ -37,7 +37,7 @@ for(i in seq_along(sim)){
     Z[i,2] <- mean(z_test_p(z_glm, z_glm_0)) 
   }
 
-  if(sim[i] == 'E'){
+  if(sim[i] == 'AE'){
     z_MC_0 <- est_MC/std_MC
     Z[i,3] <- mean(abs(z_MC_0) > qnorm(.975))
   }else{
@@ -45,7 +45,7 @@ for(i in seq_along(sim)){
     Z[i,3] <- mean(z_test_p(z_MC, z_MC_0)) 
   }
   
-  if(sim[i] == 'E'){
+  if(sim[i] == 'AE'){
     z_MCP_0 <- est_MCP/std_MCP
     Z[i,4] <- mean(abs(z_MCP_0) > qnorm(.975))
   }else{

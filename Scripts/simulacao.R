@@ -10,7 +10,7 @@ arg <- commandArgs(trailingOnly = T)
 # arg <- c(200, round(sin(2*pi*(1:7)/15)/2, 2), 50)
 # arg <- c(280, 0, .4, .5, .2, .4, .3, .5, .45, 1000, 'Z')
 
-# simulacao
+# simulacao 
 n <- as.numeric(arg[1]); k <- 2; rho <- as.numeric(arg[-c(1, 2,length(arg)-0:1)]);
 beta <- c(rep(0.5, k-1),  as.numeric(arg[2]));n.desc <- 50;m <- n+n.desc; pfn.target <- .05
 X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -1, max = 1), m, (k-1)))
