@@ -3,15 +3,13 @@ require(corrplot)
 require(glmnet)
 library(readr)
 
-#Note KATIUSKI
- folder<-"C:/Users/katiu/Dropbox/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/"
-# PC UFES
-#folder<-"C:/Users/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/"
+#Note ANDREY
+folder  <-  "/home/andrey/Projetos/PerLog/"
 # PC CASA
 #folder<-"/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/"
 
 
-dados <- read_excel(paste(folder,"dados/dados_Imputed.xlsx", sep=''))
+dados <- read_excel(paste(folder,"Dados/dados_Imputed.xlsm", sep=''))
 names(dados)
 attach(dados)
 

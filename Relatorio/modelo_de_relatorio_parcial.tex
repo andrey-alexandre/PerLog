@@ -1,0 +1,269 @@
+\documentclass[10pt, a4paper]{article}
+
+\usepackage[pdftex]{graphicx,color}
+
+\usepackage[hidelinks]{hyperref}
+\usepackage{anysize}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\usepackage[portuges,brazilian]{babel}
+\usepackage{fancyhdr}
+\usepackage{ifthen}
+\usepackage{array}
+\usepackage{natbib}
+\usepackage{multirow}
+%\usepackage{ tipa }
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{longtable}
+%\usepackage[usenames,dvipsnames]{xcolor} %to allow for color changes
+%\definecolor{light-gray}{gray}{0.80} % defines the colour.
+%\usepackage{cite} % to allow line breaks inside citations
+
+%% Para redução de espaço entre os itens da bibliografia
+	\let\oldbibliography\thebibliography
+	\renewcommand{\thebibliography}[1]{\oldbibliography{#1}
+	\setlength{\itemsep}{0pt}}
+
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+
+\usepackage{enumerate}
+\usepackage{adjustbox}
+
+
+\newcommand{\mnras}{Mon. Not. R. Astron. Soc.}
+\newcommand{\aap}{Astronomy $\&$ Astrophysics}
+\newcommand{\apjs}{ApJS}
+\newcommand{\apj}{Astrophys. J.}
+\newcommand{\apjl}{Astrophys. J. Letters}
+\newcommand{\aj}{Astron. J.}
+\newcommand{\pasa}{PASA}
+\newcommand{\nat}{Nature}
+
+\usepackage{mathptmx}
+
+
+
+\renewcommand{\baselinestretch}{1.5}
+
+%\marginsize{left}{right}{top}{bottom}
+\marginsize{30mm}{30mm}{15mm}{15mm}
+
+
+
+\begin{document}
+
+
+
+
+\begin{center}
+
+{\bf \Large UNIVERSIDADE FEDERAL DO ESPÍRITO SANTO}\\
+Pró-Reitoria de Pesquisa e Pós-Graduação\\
+Departamento de Pesquisa\\
+{\bf \Large DESCRIÇÃO PARCIAL DAS METAS ALCANÇADAS}\\
+\ \\
+{\bf \Large IDENTIFICAÇÃO DO PROJETO DE PESQUISA}\\
+Grande Área CNPq: \\
+Área CNPq:
+
+\vspace{1cm}
+
+{\bf \Large Título do Projeto}\\
+{\bf  - - - - - - - - - - -}
+\end{center}
+%
+Nome do grupo de pesquisa: \\
+Linha de pesquisa: \\
+Pesquisador responsável (orientador): Prof. Dr. Alessandro José Queiroz Sarnaglia
+
+
+\vspace{1.5cm}
+
+\begin{center}
+{\bf \Large Nome do sub-projeto do aluno}\\
+{- - - - - - - - - - - - }
+\end{center}
+%
+Nome do aluno: Andrey Alexandre de Souza Basilio \\
+Curso e período: Estatística / 11º período
+
+
+
+\vspace{.5cm}
+
+\clearpage
+  
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Introdução e justificativa:}
+Uma série temporal é um conjunto de observações ordenadas sequencialmente ao longo do tempo. Dentre suas propriedades, uma de grande importância é a estacionariedade, mais especificamente a estacionariedade fraca, que requer que o processo subjacente tenha média e covariância independentes do tempo, sendo que a última seja função apenas da distância entre as observações. Entretanto essa suposição pode ser muito restritiva em dados reais como, por exemplo, séries financeiras e econômicas, onde são percebidas tendências de crescimento ou decrescimento. 
+
+Outro exemplo de fenômeno não estacionário é a correlação periódica, ou seja, nesse caso os dados apresentam média e covariância com comportamento que se repete em intervalos fixos de tempo. Para os casos de correlação periódica, existem modelos capazes de contornar o problema da falta de estacionariedade, sendo o modelo Periódico Autorregressivo (PAR) um dos principais. No caso do modelo PAR é permitido que os parâmetros autorregressivos variem conforme os períodos. Aplicações dos modelos PAR são muito comuns em climatologia, poluição do ar e hidrologia \citep{lund1995climatological, mcleod1995diagnostic, sarnaglia2010robust}.
+
+Tendo em vista a natureza periódica dos processos de poluição do ar \citep{bloomfield1994periodic}, o uso indevido de modelos autorregressivos simples, podem levar a previsões e intervalos de previsão inapropriados.
+
+Com essa motivação, este subprojeto estudará e comparará os efeitos da utilização de modelos periódicos autorregressivos para dados de poluição do ar na Região Metropolitana da Grande Vitória, frente ao uso dos modelos habituais, que desconsideram a periodicidade da autocorrelação. Serão verificados os impactos na estimação de parâmetros e na previsão de dados não observados. Os efeitos da má especificação também serão acessados por meio de estudos de simulação de Monte Carlo.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Materiais e métodos utilizados:}
+Em, no máximo, 15 linhas descrever sucintamente os métodos, as técnicas e as abordagens utilizadas no decorrer do primeiro semestre de vinculação ao PIBIC/PIVIC - UFES.
+Exemplo de referência: %\cite{2010deto.book.....A}.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Resultados e discussão:}
+
+Foi realizado um estudo de simulação com o intuito de averiguar o desempenho dos estimadores e a capacidade preditiva dos modelos de Regressão Logística (RL), de Regressão Logística via Cadeia de Markov (RLCM) e de Regressão Logística via Cadeia de Markov Perídica (RLCMP) no cenário onde há uma estrutura de autocorrelação periódica nos dados. No total foram averiguados 4 cenários, variando os vetores de correlação e os tamanhos amostrais. A matriz de covariáveis, que foi mantida fixa para cada cenário, tem dimensão $n \times (p + 1)$, com ($p = 1$), onde a primeira coluna consiste de $1$'s (representando o intercepto) e as demais colunas foram geradas de distribuições uniforme no intervalo de [$-5, 5$], onde $\beta_0$ = $\beta_1$ = 0.5. Com o objetivo de investigar o poder preditivo dos modelos, foram geradas 50 observações adicionais e, durante o processo de estimação, descartadas.
+
+A Tabela 1 apresenta resultados relativos ao desempenho das estimativas dos modelos RL, RLCM e RLCMP. Sao apresentados: o Erro-padrão Empírico (EEP), obtido como desvio padrão das estimativas; a média das estimativas dos erros-padrão obtidos via matriz Hessiana (HEP); o vício empírico (Bias); e a raiz do Erro Quadrático Médio (RMSE).
+
+A Tabela 1, permite extrair diversas conclusões. Em ambos os casos de $\rho$ podemos verificar que a estimação do erro padrão via Hessiana se mostrou próxima que o erro padrão empírico, indicando que o processo de estimação está correto. Em geral, as estimativas do modelo RLCMP são tão eficientes quanto as do modelo RL, motivado, provavelmente, pela correlação fraca entre as variáveis, impactando pouco na estimativa do modelo logístico, entretanto ambos modelos ficam atras do modelo RLCM em todos os casos. Por fim, todos os estimadores apresentam evidências de serem fracamente consistentes, no sentido que, para todos os casos, o RMSE é diminuído com o aumento do tamanho amostral.
+
+\begin{longtable}[t]{lcclllllllll}
+\caption{Estimativas para os cenários da simulação}
+%\begin{tabular}{lcclllllllll}
+\hline                                                                                                                          &                       &       & $\beta_0$ & $\beta_1$ & $\rho_1$  & $\rho_2$  & $\rho_3$  & $\rho_4$  & $\rho_5$  & $\rho_6$  & $\rho_7$  \\ \hline
+\multirow{12}{*}{\begin{tabular}[c]{@{}c@{}}n = 280\\ $\rho$ = (0)\end{tabular}}                                                & \multirow{4}{*}{RL}   & EEP   & 0.125     & 0.211	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & HEP   & 0.125     & 0.212	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & Bias  & 0.003     & -0.001    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & RMSE  & 0.125     & 0.211	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12}
+                                                                                                                                & \multirow{4}{*}{RLMC} & EEP   & 0.126     & 0.211	    & 0.061	    & -	        & -         & -	        & -         & -	        & -         \\ 
+                                                                                                                                &                       & HEP   & 0.125     & 0.212	    & 0.06	    & -	        & -         & -	        & -         & -	        & -         \\ 
+                                                                                                                                &                       & Bias  & 0.003     & -0.001    & -0.003	& -	        & -         & -	        & -         & -	        & -         \\ 
+                                                                                                                                &                       & RMSE  & 0.126     & 0.211	    & 0.061	    & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12} 
+                                                                                                                                & \multirow{4}{*}{RLMCP}& EEP   & 0.13      & 0.22	    & 0.17	    & 0.161	    & 0.164	    & 0.172 	& 0.161	    & 0.161	    & 0.175     \\ 
+                                                                                                                                &                       & HEP   & 0.125     & 0.214	    & 0.158	    & 0.158	    & 0.158	    & 0.157 	& 0.157	    & 0.158	    & 0.158     \\ 
+                                                                                                                                &                       & Bias  & 0.005     & 0.007	    & -0.001	& -0.001	& -0.003	& -0.004	& 0.001	    & -0.013	& -0.013    \\ 
+                                                                                                                                &                       & RMSE  & 0.13      & 0.22	    & 0.17	    & 0.161	    & 0.164	    & 0.172	    & 0.161	    & 0.162	    & 0.176     \\ \hline      
+\multirow{12}{*}{\begin{tabular}[c]{@{}c@{}}n = 840\\ $\rho$ = (0)\end{tabular}}                                                & \multirow{4}{*}{RL}   & EEP   & 0.072     & 0.127	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & HEP   & 0.072     & 0.128	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & Bias  & 0.002     & 0.001	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & RMSE  & 0.072     & 0.127	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12} 
+                                                                                                                                & \multirow{4}{*}{RLMC} & EEP   & 0.072     & 0.127	    & 0.034	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & HEP   & 0.072     & 0.128	    & 0.035	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & Bias  & 0.002     & 0.002	    & -0.002	& -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & RMSE  & 0.072     & 0.127	    & 0.034	    & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12} 
+                                                                                                                                & \multirow{4}{*}{RLMCP}& EEP   & 0.072     & 0.129	    & 0.093	    & 0.092	    & 0.091	    & 0.095 	& 0.093     & 0.089     & 0.096     \\ 
+                                                                                                                                &                       & HEP   & 0.072     & 0.128	    & 0.091	    & 0.091	    & 0.091	    & 0.091 	& 0.091     & 0.091     & 0.091     \\
+                                                                                                                                &                       & Bias  & 0.002     & 0.003	    & 0.005	    & -0.004	& -0.005	& 0.001 	& -0.001    & -0.008    & -0.002    \\
+                                                                                                                                &                       & RMSE  & 0.072     & 0.129	    & 0.093	    & 0.092	    & 0.091	    & 0.095 	& 0.093     & 0.09      & 0.096     \\ \hline
+\multirow{12}{*}{\begin{tabular}[c]{@{}c@{}}n = 280\\ $\rho$ = (0.8)\end{tabular}}                                              & \multirow{4}{*}{RL}   & EEP   & 0.385     & 0.216	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & HEP   & 0.128     & 0.221	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & Bias  & 0.014     & -0.029    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & RMSE  & 0.385     & 0.218	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12} 
+                                                                                                                                & \multirow{4}{*}{RLMC} & EEP   & 0.216     & 0.178	    & 0.032	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & HEP   & 0.395     & 0.16	    & 0.041	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & Bias  & 0.021     & 0.132	    & 0.004	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & RMSE  & 0.217     & 0.222	    & 0.032	    & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12}
+                                                                                                                                & \multirow{4}{*}{RLMCP}& EEP   & 0.243     & 0.233	    & 0.105	    & 0.102	    & 0.104	    & 0.103	    & 0.101	    & 0.102	    & 0.101     \\
+                                                                                                                                &                       & HEP   & 0.474     & 0.223	    & 0.154	    & 0.142	    & 0.153	    & 0.146	    & 0.157	    & 0.154	    & 0.144     \\
+                                                                                                                                &                       & Bias  & 0.027     & 0.367	    & 0.031	    & 0.03	    & 0.028	    & 0.023	    & 0.04	    & 0.039	    & 0.033     \\
+                                                                                                                                &                       & RMSE  & 0.244     & 0.435	    & 0.109	    & 0.106	    & 0.108	    & 0.106	    & 0.109	    & 0.11	    & 0.107     \\ \hline
+\multirow{12}{*}{\begin{tabular}[c]{@{}c@{}}n = 840\\ $\rho$ = (0.8)\end{tabular}}                                              & \multirow{4}{*}{RL}   & EEP   & 0.207     & 0.208	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & HEP   & 0.073     & 0.126	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & Bias  & -0.007    & -0.41	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & RMSE  & 0.207     & 0.46	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12}
+                                                                                                                                & \multirow{4}{*}{RLMC} & EEP   & 0.047     & 0.274	    & 0.014	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & HEP   & 0.216     & 0.091	    & 0.024	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & Bias  & 0	        & 0.235	    & 0.003	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & RMSE  & 0.047     & 0.361	    & 0.015	    & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12}
+                                                                                                                                & \multirow{4}{*}{RLMCP}& EEP   & 0.063     & 0.273	    & 0.04	    & 0.039	    & 0.039	    & 0.039	    & 0.038	    & 0.041	    & 0.038     \\
+                                                                                                                                &                       & HEP   & 0.229     & 0.109	    & 0.074	    & 0.076	    & 0.069	    & 0.071	    & 0.069	    & 0.067	    & 0.072     \\
+                                                                                                                                &                       & Bias  & 0.003     & -0.151    & 0.013	    & 0.014	    & 0.008	    & 0.013	    & 0.009	    & 0.008	    & 0.015     \\
+                                                                                                                                &                       & RMSE  & 0.063     & 0.311	    & 0.042	    & 0.041	    & 0.04	    & 0.041	    & 0.039	    & 0.042	    & 0.041     \\ \hline
+\multirow{12}{*}{\begin{tabular}[c]{@{}c@{}}n = 280\\ $\rho$ = (0.8, 0.5, \\ 0.3, -0.4, \\ -0.7, -0.2, \\ 0.4)\end{tabular}}    & \multirow{4}{*}{RL}   & EEP   & 0.152     & 0.225	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & HEP   & 0.125     & 0.208	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & Bias  & -0.005    & -0.018	& -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & RMSE  & 0.152     & 0.226	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12} 
+                                                                                                                                & \multirow{4}{*}{RLMC} & EEP   & 0.152     & 0.225	    & 0.058	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & HEP   & 0.138     & 0.207	    & 0.06	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & Bias  & -0.004    & -0.011	& -0.703	& -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & RMSE  & 0.152     & 0.225	    & 0.706	    & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12}
+                                                                                                                                & \multirow{4}{*}{RLMCP}& EEP   & 0.151     & 0.221	    & 0.113	    & 0.142	    & 0.147	    & 0.174	    & 0.111     & 0.15      & 0.147     \\
+                                                                                                                                &                       & HEP   & 0.179     & 0.207	    & 0.128	    & 0.138	    & 0.15	    & 0.174	    & 0.351     & 0.147     & 0.145     \\
+                                                                                                                                &                       & Bias  & 0.139     & 0.113	    & 0.041	    & -0.011	& -0.011    & -0.02	    & -0.195    & 0.013     & -0.015    \\
+                                                                                                                                &                       & RMSE  & 0.205     & 0.248	    & 0.121	    & 0.143	    & 0.148	    & 0.176	    & 0.224     & 0.151     & 0.148     \\ \hline
+\multirow{12}{*}{\begin{tabular}[c]{@{}c@{}}n = 840\\ $\rho$ = (0.8, 0.5, \\ 0.3, -0.4, \\ -0.7, -0.2, \\ 0.4)\end{tabular}}    & \multirow{4}{*}{RL}   & EEP   & 0.091     & 0.128	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & HEP   & 0.072     & 0.128	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & Bias  & -0.012    & -0.019	& -	        & -	        & -	        & -	        & -	        & -	        & -         \\
+                                                                                                                                &                       & RMSE  & 0.092     & 0.129	    & -	        & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12}
+                                                                                                                                & \multirow{4}{*}{RLMC} & EEP   & 0.091     & 0.128	    & 0.031	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & HEP   & 0.08      & 0.127	    & 0.035	    & -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & Bias  & -0.012    & -0.019	& -0.696	& -	        & -	        & -	        & -	        & -	        & -         \\ 
+                                                                                                                                &                       & RMSE  & 0.092     & 0.129	    & 0.697	    & -	        & -	        & -	        & -	        & -	        & -         \\ \cline{2-12}
+                                                                                                                                & \multirow{4}{*}{RLMCP}& EEP   & 0.087     & 0.114	    & 0.064	    & 0.07	    & 0.067	    & 	0.073	& 0.095	    & 0.071	    & 0.07      \\
+                                                                                                                                &                       & HEP   & 0.083     & 0.108	    & 0.058	    & 0.076	    & 0.087	    & 	0.069	& 0.152	    & 0.08	    & 0.082     \\
+                                                                                                                                &                       & Bias  & 0.085     & 0.095	    & 0.034	    & -0.006	& -0.006	& 	0.011	& -0.128	& 0.01	    & -0.007    \\
+                                                                                                                                &                       & RMSE  & 0.121     & 0.148	    & 0.072	    & 0.07	    & 0.067	    & 	0.074	& 0.159	    & 0.072	    & 0.07
+%\end{tabular} 
+\end{longtable}
+
+Na Tabela 2 são apresentados os resultados preditivos dos modelos para os dados simulados para dados utilizados para o aprendizado ('insample') e dados não vistos anteriormente ('out'). É possível ver, para o caso onde não há autocorrelação que os métodos RL e RLMC são basicamente equivalentes, tendo o RLMCP uma leve vantagem, que diminui com o aumento do tamanho amostral. Para o caso de autocorrelação não periódica, percebemos que os modelos RLMC e RLMCP se aproximam bastante, novamente se tornando mais equivalentes com o aumento da amostra. Já no terceiro caso, onde há uma autocorrelação periódica é visível que o modelo RLMCP se destaca, principalmente quando analisado seu resultado com os dados não vistos anteriormente ('out').
+
+\begin{table}[]
+\caption{Estimativas para os cenários da simulação}
+\begin{tabular}{ccclll}
+\hline                                                                                                                  &                           &       & RL        & RLMC      & RLMCP     \\ \hline
+\multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}n = 280\\ $\rho$ = 0\end{tabular}}                                           & \multirow{3}{*}{insample} & PFP	& 0.357	    & 0.37      & 0.371     \\ 
+                                                                                                                        &                           & PFN	& 0.386	    & 0.209     & 0.07      \\ 
+                                                                                                                        &                           & ACC	& 0.622	    & 0.627     & 0.632     \\  \cline{2-6}
+                                                                                                                        & \multirow{3}{*}{out}      & PFP	& 0.388	    & 0.384     & 0.387     \\ 
+                                                                                                                        &                           & PFN	& 0.602	    & 0.538     & 0.527     \\ 
+                                                                                                                        &                           & ACC	& 0.546	    & 0.597     & 0.607     \\ \hline
+\multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}n = 840\\ $\rho$ = 0\end{tabular}}                                           & \multirow{3}{*}{insample} & PFP	& 0.363	    & 0.371     & 0.373     \\
+                                                                                                                        &                           & PFN	& 0.445	    & 0.275     & 0.113     \\ 
+                                                                                                                        &                           & ACC	& 0.624	    & 0.627     & 0.627     \\ \cline{2-6}
+                                                                                                                        & \multirow{3}{*}{out}      & PFP	& 0.38	    & 0.374     & 0.377     \\ 
+                                                                                                                        &                           & PFN	& 0.629	    & 0.53      & 0.542     \\
+                                                                                                                        &                           & ACC	& 0.58	    & 0.615     & 0.618     \\ \hline
+\multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}n = 280\\ $\rho$ = 0.8\end{tabular}}                                         & \multirow{3}{*}{insample} & PFP	& 0.356	    & 0.243     & 0.233     \\
+                                                                                                                        &                           & PFN	& 0.42	    & 0.041     & 0.039     \\ 
+                                                                                                                        &                           & ACC	& 0.62	    & 0.796     & 0.806     \\ \cline{2-6}  
+                                                                                                                        & \multirow{3}{*}{out}      & PFP	& 0.393	    & 0.282     & 0.263     \\ 
+                                                                                                                        &                           & PFN	& 0.595	    & 0.176     & 0.165     \\
+                                                                                                                        &                           & ACC	& 0.566	    & 0.756     & 0.779     \\ \hline
+\multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}n = 840\\ $\rho$ = 0.8\end{tabular}}                                         & \multirow{3}{*}{insample} & PFP	& 0.369	    & 0.253     & 0.251     \\
+                                                                                                                        &                           & PFN	& 0.412	    & 0.045     & 0.045     \\ 
+                                                                                                                        &                           & ACC	& 0.619	    & 0.786     & 0.788     \\ \cline{2-6}
+                                                                                                                        & \multirow{3}{*}{out}      & PFP	& 0.379	    & 0.268     & 0.264     \\ 
+                                                                                                                        &                           & PFN	& 0.621	    & 0.16      & 0.16      \\
+                                                                                                                        &                           & ACC	& 0.549	    & 0.773     & 0.779	    \\ \hline
+\multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}n = 280\\ $\rho$ = (0.8, 0.5, 0.3, -0.4, -0.7, -0.2, 0.4)\end{tabular}}      & \multirow{3}{*}{insample} & PFP	& 0.358	    & 0.345     & 0.346     \\
+                                                                                                                        &                           & PFN	& 0.402	    & 0.385     & 0.017     \\ 
+                                                                                                                        &                           & ACC	& 0.619	    & 0.637     & 0.672     \\ \cline{2-6}  
+                                                                                                                        & \multirow{3}{*}{out}      & PFP	& 0.392	    & 0.414     & 0.392     \\ 
+                                                                                                                        &                           & PFN	& 0.625	    & 0.668     & 0.658     \\
+                                                                                                                        &                           & ACC	& 0.54	    & 0.503     & 0.598     \\ \hline
+\multirow{8}{*}{\begin{tabular}[c]{@{}c@{}}n = 840\\ $\rho$ = (0.8, 0.5, 0.3, -0.4, -0.7, -0.2, 0.4)\end{tabular}}      & \multirow{3}{*}{insample} & PFP	& 0.369	    & 0.363     & 0.359     \\
+                                                                                                                        &                           & PFN	& 0.443	    & 0.435     & 0.034     \\ 
+                                                                                                                        &                           & ACC	& 0.618	    & 0.627     & 0.654     \\ \cline{2-6}
+                                                                                                                        & \multirow{3}{*}{out}      & PFP	& 0.378	    & 0.392     & 0.376     \\ 
+                                                                                                                        &                           & PFN	& 0.593	    & 0.578     & 0.533     \\
+                                                                                                                        &                           & ACC	& 0.603	    & 0.527     & 0.62	
+\end{tabular}
+\end{table} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Metas futuras:}
+Para o desenvolvimento deste subprojeto, o candidato a bolsista percorrerá os seguintes percursos metodológicos:
+\begin{itemize}
+ \item Realizacão de revisões bibliográficas com respeito a análise de dados de poluição atmosférica;
+ \item Leitura de artigos científicos relativos a analise de modelos de regressão logística para dados autocorrelacionados;
+ \item Leitura de artigos científicos relativos a analise de modelos de periódicos;
+ \item Estudo da linguagem de programação R \citep{R} para a análise dos dados;
+ \item Estudo do conjunto de macros LATEX para a confecção de relatórios e artigo científico;
+ \item implementação em R, caso necessário, de métodos de estimação dos modelos a serem empregados.
+\end{itemize}
+
+
+
+%\bibliographystyle{apalike2}
+\bibliographystyle{hapalike2-NOand}
+
+\bibliography{biblio}
+
+\end{document}
+
+
+

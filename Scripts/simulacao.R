@@ -1,18 +1,18 @@
 #Note ANDREY
-folder  <-  "/home/andrey/Projetos/PerLog/Scripts/"
+folder  <-  "/home/andrey/Projetos/PerLog/"
 # PC TRABALHO
 #folder <- 'C:/Users/Andrey/Documents/Andrey/TCC/'
 # PC Casa Alessandro
 #folder <- '/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/'
-source(paste(folder, 'funcoes.R', sep = ''))
-# source(paste(folder, 'FuncKat.R', sep = ''))
+source(paste(folder, 'Scripts/funcoes.R', sep = ''))
+# source(paste(folder, 'Scripts/FuncKat.R', sep = ''))
 arg <- commandArgs(trailingOnly = T)
 # arg <- c(200, round(sin(2*pi*(1:7)/15)/2, 2), 50)
 # arg <- c(280, 0, .4, .5, .2, .4, .3, .5, .45, 1000, 'Z')
 
 # simulacao 
 n <- as.numeric(arg[1]); k <- 2; rho <- as.numeric(arg[-c(1, 2,length(arg)-0:1)]);
-beta <- c(rep(0.5, k-1),  as.numeric(arg[2]));n.desc <- 50;m <- n+n.desc; pfn.target <- .05
+beta <- c(rep(0.5, k-1),  as.numeric(arg[2]));n.desc <- 100;m <- n+n.desc; pfn.target <- .1
 X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -1, max = 1), m, (k-1)))
 # X1 <- cbind(1, sin(2*pi*(1:m)/21))
 colnames(X1) <- c('Intercept', kronecker("X_", 1:(k-1), paste, sep=''))
@@ -31,32 +31,32 @@ est_MC <- std_MC <- matrix(nrow = REP, ncol = (k+1))
 
 # Leitura necessária caso haja problemas com a sessão
 {
-  if(!dir.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/'))) dir.create(path = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/'), recursive = T)
-  if(!dir.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Resultados/', arg[length(arg)], '/'))) dir.create(path = paste0('/home/andrey/Projetos/PerLog/Dados/Resultados/', arg[length(arg)], '/'), recursive = T)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'))) pfp.insample.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'))) pfn.insample.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.insample.glm.csv'))) acc.insample.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.insample.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.glm.csv'))) pfp.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.glm.csv'))) pfn.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.glm.csv'))) acc.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_est_glm.csv'))) est_glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_est_glm.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_std_glm.csv'))) std_glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_std_glm.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.insample.MC.csv'))) pfp.insample.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.insample.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.insample.MC.csv'))) pfn.insample.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.insample.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.insample.MC.csv'))) acc.insample.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.insample.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.MC.csv'))) pfp.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.MC.csv'))) pfn.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.MC.csv'))) acc.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_est_MC.csv'))) est_MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_est_MC.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_std_MC.csv'))) std_MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_std_MC.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.insample.MCP.csv'))) pfp.insample.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.insample.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.insample.MCP.csv'))) pfn.insample.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.insample.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.insample.MCP.csv'))) acc.insample.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.insample.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.MCP.csv'))) pfp.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfp.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.MCP.csv'))) pfn.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_pfn.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.MCP.csv'))) acc.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_acc.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_est_MCP.csv'))) est_MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_est_MCP.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_std_MCP.csv'))) std_MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Scripts/Resultados/', arg[length(arg)], '/parcial_std_MCP.csv'), stringsAsFactors = F, header = F)
+  if(!dir.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/'))) dir.create(path = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/'), recursive = T)
+  if(!dir.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/', arg[length(arg)], '/'))) dir.create(path = paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/', arg[length(arg)], '/'), recursive = T)
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'))) pfp.insample.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'))) pfn.insample.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.glm.csv'))) acc.insample.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.glm.csv'))) pfp.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.glm.csv'))) pfn.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.glm.csv'))) acc.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_glm.csv'))) est_glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_glm.csv'), stringsAsFactors = F, header = F)
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_glm.csv'))) std_glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_glm.csv'), stringsAsFactors = F, header = F)
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MC.csv'))) pfp.insample.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MC.csv'))) pfn.insample.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MC.csv'))) acc.insample.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MC.csv'))) pfp.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MC.csv'))) pfn.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.MC.csv'))) acc.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_MC.csv'))) est_MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_MC.csv'), stringsAsFactors = F, header = F)
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_MC.csv'))) std_MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_MC.csv'), stringsAsFactors = F, header = F)
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MCP.csv'))) pfp.insample.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MCP.csv'))) pfn.insample.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MCP.csv'))) acc.insample.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MCP.csv'))) pfp.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MCP.csv'))) pfn.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.MCP.csv'))) acc.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_MCP.csv'))) est_MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_MCP.csv'), stringsAsFactors = F, header = F)
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_MCP.csv'))) std_MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_MCP.csv'), stringsAsFactors = F, header = F)
 }
 r <- 1 + length(pfp.insample.glm)
 
@@ -132,30 +132,30 @@ while(r <= REP){
     pfp.MCP[r] <- pr.MCP$pfp; pfn.MCP[r] <- pr.MCP$pfn; acc.MCP[r] <- pr.MCP$acc
     #Escrita das variáveis 
     {
-      write.table(x = pfp.insample.glm, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.insample.glm, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.insample.glm, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_acc.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.glm, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfp.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.glm, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfn.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.glm, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_acc.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = est_glm, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_est_glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = std_glm, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_std_glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.insample.MC, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfp.insample.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.insample.MC, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfn.insample.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.insample.MC, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_acc.insample.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.MC, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfp.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.MC, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfn.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.MC, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_acc.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = est_MC, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_est_MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = std_MC, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_std_MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.insample.MCP, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfp.insample.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.insample.MCP, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfn.insample.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.insample.MCP, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_acc.insample.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.MCP, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfp.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.MCP, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_pfn.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.MCP, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_acc.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = est_MCP, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_est_MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = std_MCP, file = paste0(folder,'Resultados/', arg[length(arg)], '/parcial_std_MCP.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfp.insample.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfn.insample.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = acc.insample.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfp.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.glm.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfn.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.glm.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = acc.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.glm.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = est_glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_est_glm.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = std_glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_std_glm.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfp.insample.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MC.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfn.insample.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MC.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = acc.insample.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MC.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfp.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MC.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfn.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MC.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = acc.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.MC.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = est_MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_est_MC.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = std_MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_std_MC.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfp.insample.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MCP.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfn.insample.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MCP.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = acc.insample.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MCP.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfp.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MCP.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = pfn.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MCP.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = acc.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.MCP.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = est_MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_est_MCP.csv'), row.names = F, col.names = F, sep = ',')
+      write.table(x = std_MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_std_MCP.csv'), row.names = F, col.names = F, sep = ',')
     }
     r  <-  r+1
     cat('\n')
@@ -188,13 +188,13 @@ colnames(mat.EP) <- c('Emp. EP - GLM', 'Hes. EP - GLM', 'Emp. EP - MC', 'Hes. EP
 
 ### RESULTADOS PARA GUARDAR
 paste0('n = ', n, ', rho = (', paste(rho, collapse = ', '), ')')
-PFN_IN_GLM <- sum(pfn.insample.glm>.05)/REP
-PFN_IN_MC <- sum(pfn.insample.MC>.05)/REP
-PFN_IN_MCP <- sum(pfn.insample.MCP>.05)/REP
+PFN_IN_GLM <- sum(pfn.insample.glm > pfn.target)/REP
+PFN_IN_MC <- sum(pfn.insample.MC > pfn.target)/REP
+PFN_IN_MCP <- sum(pfn.insample.MCP > pfn.target)/REP
 PFN_IN_GLM; PFN_IN_MC; PFN_IN_MCP
 pf_mat
 mat_Bias_RMSE
 mat.EP
 
-save(list = c('PFN_IN_GLM', 'PFN_IN_MC', 'PFN_IN_MCP', 'pf_mat', 'mat_Bias_RMSE', 'mat.EP'), file = paste0('/home/andrey/Projetos/PerLog/Dados/Resultados/', arg[length(arg)], '/resultado.rds', sep = ''))
-# load(paste0('/home/andrey/Projetos/PerLog/Dados/Resultados/C/resultado.rds', sep = ''))
+save(list = c('PFN_IN_GLM', 'PFN_IN_MC', 'PFN_IN_MCP', 'pf_mat', 'mat_Bias_RMSE', 'mat.EP'), file = paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/', arg[length(arg)], '/resultado.rds', sep = ''))
+# load(paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/C/resultado.rds', sep = ''))
