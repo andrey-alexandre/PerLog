@@ -225,7 +225,7 @@ logistic_MC <- function(resp, covar, par0, trace=2, li=0.000000001, ls=0.9999999
                   upper = c(rep(Inf, dim(covar)[2]), rep(0.999999, length(par0) - dim(covar)[2])), hessian = FALSE,
                   control = list(trace=trace))
   # seotim <- sqrt(diag(solve(otim$hessian)))
-  seotim  <- sqrt(ifelse(diag(solve(hess.loglik(par = otim$par, out = out))) < 0, li, diag(solve(hess.loglik(par = otim$par, out = out)))))
+  seotim  <- sqrt(ifelse(diag(solve(hess.loglik(par = otim$par, out = out))) <= 0, li, diag(solve(hess.loglik(par = otim$par, out = out)))))
   mat.res <- cbind(otim$par, seotim, 2*(1-pnorm(abs(otim$par/seotim))))
   colnames(mat.res) <- c('Estimate','Std.Error','p-value')
   # row.names(mat.res)[dim(covar)[2]+1] <- 'lambda'
@@ -279,21 +279,50 @@ min.pfp.MC <- function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.
           if(prob[i]>corte1[j]){classif[i] <- 1}
         }
       }
-      A <- table(y[2:n], classif[2:n]) 
-      if(ncol(A)==1){                                                 
-        sens[l,j] <- classif[2]                                                      
-        espec[l,j] <-  1-sens[l,j]                                                     
-        pfp[l,j] <- A[1,]/sum(A[,1])
-        pfn[l,j] <- A[2,]/sum(A[,1])
-        if(classif[2] == 0) acc[l,j] <- A[1,1]/sum(A)
-        if(classif[2] == 1) acc[l,j] <- A[2,1]/ sum(A)
-      }else{                                                                   
-        espec[l,j] <-  A[1,1]/sum(A[1,])
-        sens[l,j] <-  A[2,2]/sum(A[2,])
-        pfp[l,j] <- A[1,2]/sum(A[,2])
-        pfn[l,j] <- A[2,1]/sum(A[,1])
-        acc[l,j] <- sum(diag(A))/sum(A)
+      A <- table(y[2:n], classif[2:n])
+      preds <- sort(unique(classif[2:n])); trues <- sort(unique(y[2:n]))
+      if(all(dim(A)==2)){
+        espec[l,j] <-  A[1,1]/sum(A[1,]); sens[l,j] <-  A[2,2]/sum(A[2,])
+        pfp[l,j] <- A[1,2]/sum(A[,2]); pfn[l,j] <- A[2,1]/sum(A[,1]); acc[l,j] <- sum(diag(A))/sum(A)
+      }else{
+        if(any(dim(A)==2)){
+          if(ncol(A)==1){
+            if(preds == 0)
+              espec[l,j] <- 1; sens[l,j] <- 0; pfp[l,j] <- A[1,1]/sum(A); pfn[l,j] <- A[2,1]/sum(A); acc[l,j] <- A[1,1]/sum(A)
+            if(preds == 1)
+              espec[l,j] <- 0; sens[l,j] <- 1; pfp[l,j] <- A[1,1]/sum(A); pfn[l,j] <- A[2,1]/sum(A); acc[l,j] <- A[2,1]/sum(A)
+          }
+          if(nrow(A)==1){
+            if(trues == 0)
+              espec[l,j] <- A[1,1]/sum(A); sens[l,j] <- A[1,2]/sum(A); pfp[l,j] <- A[1,2]/sum(A); pfn[l,j] <- 0; acc[l,j] <- A[1,1]/sum(A)
+            if(trues == 1)
+              espec[l,j] <- A[1,1]/sum(A); sens[l,j] <- A[1,2]/sum(A); pfp[l,j] <- 0; pfn[l,j] <- A[1,1]/sum(A); acc[l,j] <- A[1,2]/sum(A)
+          }
+        }else{
+          if(trues == 0 & preds == 0)
+            espec[l,j] <- 1; sens[l,j] <- 1; pfp[l,j] <- 0; pfn[l,j] <- 0; acc[l,j] <- 1
+          if(trues == 0 & preds == 1)
+            espec[l,j] <- 0; sens[l,j] <- 0; pfp[l,j] <- 1; pfn[l,j] <- 0; acc[l,j] <- 0
+          if(trues == 1 & preds == 0)
+            espec[l,j] <- 0; sens[l,j] <- 0; pfp[l,j] <- 0; pfn[l,j] <- 1; acc[l,j] <- 0
+          if(trues == 1 & preds == 1)
+            espec[l,j] <- 1; sens[l,j] <- 1; pfp[l,j] <- 0; pfn[l,j] <- 0; acc[l,j] <- 1
+        }
       }
+      # if(ncol(A)==1){                                                 
+      #   sens[l,j] <- classif[2]                                                      
+      #   espec[l,j] <-  1-sens[l,j]                                                     
+      #   pfp[l,j] <- A[1,]/sum(A[,1])
+      #   pfn[l,j] <- A[2,]/sum(A[,1])
+      #   if(classif[2] == 0) acc[l,j] <- A[1,1]/sum(A)
+      #   if(classif[2] == 1) acc[l,j] <- A[2,1]/ sum(A)
+      # }else{                                                                   
+      #   espec[l,j] <-  A[1,1]/sum(A[1,])
+      #   sens[l,j] <-  A[2,2]/sum(A[2,])
+      #   pfp[l,j] <- A[1,2]/sum(A[,2])
+      #   pfn[l,j] <- A[2,1]/sum(A[,1])
+      #   acc[l,j] <- sum(diag(A))/sum(A)
+      # }
       # if((l==1)&(j==1)){pfp.min <- pfp[l,j]}
       if( (pfn[l,j]<=pfn.target) & (pfp[l,j]<pfp.min) ){
         corte0min <- corte0[l]
@@ -328,19 +357,34 @@ min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
     classif <-  rep(0,(length(y)))
     for(i in 1:length(y)){ if(prob[i]>corte[j]) classif[i] <- 1 }
     A <- table(y,classif)
-    if(ncol(A)==1){                                                 
-      sens[j] <- classif[2]                                                      
-      espec[j] <-  1-sens[j]                                                     
-      pfp[j] <- A[1,]/sum(A[,1])
-      pfn[j] <- A[2,]/sum(A[,1])
-      if(classif[2] == 0) acc[j] <- A[1,1]/sum(A)
-      if(classif[2] == 1) acc[j] <- A[2,1]/ sum(A)
-    }else{                                                                   
-      espec[j] <-  A[1,1]/sum(A[1,])
-      sens[j] <-  A[2,2]/sum(A[2,])
-      pfp[j] <- A[1,2]/sum(A[,2])
-      pfn[j] <- A[2,1]/sum(A[,1])
-      acc[j] <- sum(diag(A))/sum(A)
+    preds <- sort(unique(classif)); trues <- sort(unique(y))
+    if(all(dim(A)==2)){
+      espec[j] <-  A[1,1]/sum(A[1,]); sens[j] <-  A[2,2]/sum(A[2,])
+      pfp[j] <- A[1,2]/sum(A[,2]); pfn[j] <- A[2,1]/sum(A[,1]); acc[j] <- sum(diag(A))/sum(A)
+    }else{
+      if(any(dim(A)==2)){
+        if(ncol(A)==1){
+          if(preds == 0)
+            espec[j] <- 1; sens[j] <- 0; pfp[j] <- A[1,1]/sum(A); pfn[j] <- A[2,1]/sum(A); acc[j] <- A[1,1]/sum(A)
+          if(preds == 1)
+            espec[j] <- 0; sens[j] <- 1; pfp[j] <- A[1,1]/sum(A); pfn[j] <- A[2,1]/sum(A); acc[j] <- A[2,1]/sum(A)
+        }
+        if(nrow(A)==1){
+          if(trues == 0)
+            espec[j] <- A[1,1]/sum(A); sens[j] <- A[1,2]/sum(A); pfp[j] <- A[1,2]/sum(A); pfn[j] <- 0; acc[j] <- A[1,1]/sum(A)
+          if(trues == 1)
+            espec[j] <- A[1,1]/sum(A); sens[j] <- A[1,2]/sum(A); pfp[j] <- 0; pfn[j] <- A[1,1]/sum(A); acc[j] <- A[1,2]/sum(A)
+        }
+      }else{
+        if(trues == 0 & preds == 0)
+          espec[j] <- 1; sens[j] <- 1; pfp[j] <- 0; pfn[j] <- 0; acc[j] <- 1
+        if(trues == 0 & preds == 1)
+          espec[j] <- 0; sens[j] <- 0; pfp[j] <- 1; pfn[j] <- 0; acc[j] <- 0
+        if(trues == 1 & preds == 0)
+          espec[j] <- 0; sens[j] <- 0; pfp[j] <- 0; pfn[j] <- 1; acc[j] <- 0
+        if(trues == 1 & preds == 1)
+          espec[j] <- 1; sens[j] <- 1; pfp[j] <- 0; pfn[j] <- 0; acc[j] <- 1
+      }
     }
     if( (pfn[j]<=pfn.target) & (pfp[j]<pfp.min) ){
       cortemin <- corte[j]
@@ -374,24 +418,52 @@ prev.glm <- function(fit, newY=NULL, newX, corte, li=0.000000001, ls=0.999999999
   for(i in 1:n.desc){if(prob.glm.p[i]>corte) classif.glm[i] <- 1 }
   if(!is.null(newY)){
     A <- table(newY,classif.glm)
-    if(ncol(A)==1){
-      if(classif.glm[1]==1) sens.glm <- 1; acc.glm <- A[2,1]/sum(A)
-      if(classif.glm[1]==0) sens.glm <- 0; acc.glm <- A[1,1]/ sum(A)
-      espec.glm <- 1-sens.glm
-      
+    preds <- sort(unique(classif.glm)); trues <- sort(unique(newY))
+    if(all(dim(A)==2)){
+      espec.glm <-  A[1,1]/sum(A[1,]); sens.glm <-  A[2,2]/sum(A[2,])
+      pfp.glm <- A[1,2]/sum(A[,2]); pfn.glm <- A[2,1]/sum(A[,1]); acc.glm <- sum(diag(A))/sum(A)
     }else{
-      espec.glm <-  A[1,1]/sum(A[1,])
-      sens.glm <-  A[2,2]/sum(A[2,])
-      acc.glm <- sum(diag(A))/sum(A)
+      if(any(dim(A)==2)){
+        if(ncol(A)==1){
+          if(preds == 0)
+            espec.glm <- 1; sens.glm <- 0; pfp.glm <- A[1,1]/sum(A); pfn.glm <- A[2,1]/sum(A); acc.glm <- A[1,1]/sum(A)
+          if(preds == 1)
+            espec.glm <- 0; sens.glm <- 1; pfp.glm <- A[1,1]/sum(A); pfn.glm <- A[2,1]/sum(A); acc.glm <- A[2,1]/sum(A)
+        }
+        if(nrow(A)==1){
+          if(trues == 0)
+            espec.glm <- A[1,1]/sum(A); sens.glm <- A[1,2]/sum(A); pfp.glm <- A[1,2]/sum(A); pfn.glm <- 0; acc.glm <- A[1,1]/sum(A)
+          if(trues == 1)
+            espec.glm <- A[1,1]/sum(A); sens.glm <- A[1,2]/sum(A); pfp.glm <- 0; pfn.glm <- A[1,1]/sum(A); acc.glm <- A[1,2]/sum(A)
+        }
+      }else{
+        if(trues == 0 & preds == 0)
+          espec.glm <- 1; sens.glm <- 1; pfp.glm <- 0; pfn.glm <- 0; acc.glm <- 1
+        if(trues == 0 & preds == 1)
+          espec.glm <- 0; sens.glm <- 0; pfp.glm <- 1; pfn.glm <- 0; acc.glm <- 0
+        if(trues == 1 & preds == 0)
+          espec.glm <- 0; sens.glm <- 0; pfp.glm <- 0; pfn.glm <- 1; acc.glm <- 0
+        if(trues == 1 & preds == 1)
+          espec.glm <- 1; sens.glm <- 1; pfp.glm <- 0; pfn.glm <- 0; acc.glm <- 1
+      }
     }
-    if(sens.glm==0){sens.glm <- li}
-    if(sens.glm==1){sens.glm <- ls}
-    if(espec.glm==0){espec.glm <- li}
-    if(espec.glm==1){espec.glm <- ls}
-    p <- mean(newY)
-    phat.glm <- mean(classif.glm)
-    pfp.glm <- 1-(p*sens.glm)/(p*sens.glm+(1-p)*(1-espec.glm))
-    pfn.glm <- 1-(espec.glm*(1-p))/((1-sens.glm)*p+espec.glm*(1-p))
+    # if(ncol(A)==1){
+    #   if(classif.glm[1]==1) sens.glm <- 1; acc.glm <- A[2,1]/sum(A)
+    #   if(classif.glm[1]==0) sens.glm <- 0; acc.glm <- A[1,1]/ sum(A)
+    #   espec.glm <- 1-sens.glm
+    # }else{
+    #   espec.glm <-  A[1,1]/sum(A[1,])
+    #   sens.glm <-  A[2,2]/sum(A[2,])
+    #   acc.glm <- sum(diag(A))/sum(A)
+    # }
+    # if(sens.glm==0){sens.glm <- li}
+    # if(sens.glm==1){sens.glm <- ls}
+    # if(espec.glm==0){espec.glm <- li}
+    # if(espec.glm==1){espec.glm <- ls}
+    # p <- mean(newY)
+    # phat.glm <- mean(classif.glm)
+    # pfp.glm <- 1-(p*sens.glm)/(p*sens.glm+(1-p)*(1-espec.glm))
+    # pfn.glm <- 1-(espec.glm*(1-p))/((1-sens.glm)*p+espec.glm*(1-p))
     return(list(prev=classif.glm, pfp=pfp.glm, pfn=pfn.glm, acc = acc.glm))
   }
   else{
@@ -405,28 +477,58 @@ prev.MC <- function(beta, rho, newY, newX, LastY, LastX, corte0, corte1){
   n.desc  <-  length(y.desc)
   prob.p  <-  predi(beta.vet=beta, rho = rho, covar=X.desc, resp=y.desc)
   classif.MC <-  rep(0,(n.desc-1))
-  for(i in 2:(n.desc-1)){
+  for(i in 2:(n.desc)){
     if(y.desc[i-1]==0){
       if(prob.p[i]>corte0){classif.MC[i-1] <- 1}
     }else{
       if(prob.p[i]>corte1){classif.MC[i-1] <- 1}
     }
   }
-  A <- table(newY,classif.MC) 
-  if(ncol(A)==1){                                                 
-    sens.MC <- classif.MC[1]                                                      
-    espec.MC <-  1-sens.MC
-    if(classif[2] == 0) acc.MC <- A[1,1]/sum(A)
-    if(classif[2] == 1) acc.MC <- A[2,1]/ sum(A)
+  A <- table(newY,classif.MC)
+  preds <- sort(unique(classif.MC)); trues <- sort(unique(newY))
+  if(all(dim(A)==2)){
+    espec.MC <-  A[1,1]/sum(A[1,]); sens.MC <-  A[2,2]/sum(A[2,])
+    pfp.MC <- A[1,2]/sum(A[,2]); pfn.MC <- A[2,1]/sum(A[,1]); acc.MC <- sum(diag(A))/sum(A)
   }else{
-    # cortemin <- corte
-    espec.MC <-  A[1,1]/sum(A[1,])                                             
-    sens.MC <-  A[2,2]/sum(A[2,])
-    acc.MC <- sum(diag(A))/sum(A)
+    if(any(dim(A)==2)){
+      if(ncol(A)==1){
+        if(preds == 0)
+          espec.MC <- 1; sens.MC <- 0; pfp.MC <- A[1,1]/sum(A); pfn.MC <- A[2,1]/sum(A); acc.MC <- A[1,1]/sum(A)
+        if(preds == 1)
+          espec.MC <- 0; sens.MC <- 1; pfp.MC <- A[1,1]/sum(A); pfn.MC <- A[2,1]/sum(A); acc.MC <- A[2,1]/sum(A)
+      }
+      if(nrow(A)==1){
+        if(trues == 0)
+          espec.MC <- A[1,1]/sum(A); sens.MC <- A[1,2]/sum(A); pfp.MC <- A[1,2]/sum(A); pfn.MC <- 0; acc.MC <- A[1,1]/sum(A)
+        if(trues == 1)
+          espec.MC <- A[1,1]/sum(A); sens.MC <- A[1,2]/sum(A); pfp.MC <- 0; pfn.MC <- A[1,1]/sum(A); acc.MC <- A[1,2]/sum(A)
+      }
+    }else{
+      if(trues == 0 & preds == 0)
+        espec.MC <- 1; sens.MC <- 1; pfp.MC <- 0; pfn.MC <- 0; acc.MC <- 1
+      if(trues == 0 & preds == 1)
+        espec.MC <- 0; sens.MC <- 0; pfp.MC <- 1; pfn.MC <- 0; acc.MC <- 0
+      if(trues == 1 & preds == 0)
+        espec.MC <- 0; sens.MC <- 0; pfp.MC <- 0; pfn.MC <- 1; acc.MC <- 0
+      if(trues == 1 & preds == 1)
+        espec.MC <- 1; sens.MC <- 1; pfp.MC <- 0; pfn.MC <- 0; acc.MC <- 1
+    }
   }
-  p <- mean(newY)
-  phat.MC <- mean(classif.MC)
-  pfp.MC <- 1-(p*sens.MC)/(p*sens.MC+(1-p)*(1-espec.MC))
-  pfn.MC <- 1-(espec.MC*(1-p))/((1-sens.MC)*p+espec.MC*(1-p))
+  # if(ncol(A)==1){                                                 
+  #   sens.MC <- classif.MC[1]                                                      
+  #   espec.MC <-  1-sens.MC
+  #   if(classif[2] == 0) acc.MC <- A[1,1]/sum(A)
+  #   if(classif[2] == 1) acc.MC <- A[2,1]/ sum(A)
+  # }else{
+  #   # cortemin <- corte
+  #   espec.MC <-  A[1,1]/sum(A[1,])                                             
+  #   sens.MC <-  A[2,2]/sum(A[2,])
+  #   acc.MC <- sum(diag(A))/sum(A)
+  # }
+  # p <- mean(newY)
+  # phat.MC <- mean(classif.MC)
+  # pfp.MC <- 1-(p*sens.MC)/(p*sens.MC+(1-p)*(1-espec.MC))
+  # pfn.MC <- 1-(espec.MC*(1-p))/((1-sens.MC)*p+espec.MC*(1-p))
   return(list(prev=classif.MC, pfp=pfp.MC, pfn=pfn.MC, acc = acc.MC))
 }
+

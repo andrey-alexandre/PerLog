@@ -3,23 +3,25 @@ folder  <-  "/home/andrey/Projetos/PerLog/"
 # PC TRABALHO
 #folder <- 'C:/Users/Andrey/Documents/Andrey/TCC/'
 # PC Casa Alessandro
-#folder <- '/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/'
+# folder <- '~/Dropbox/alessandro/UFES/aulas/2019_1/Orientacao_IC_Andrey/'
 source(paste(folder, 'Scripts/funcoes.R', sep = ''))
 # source(paste(folder, 'Scripts/FuncKat.R', sep = ''))
 arg <- commandArgs(trailingOnly = T)
 # arg <- c(200, round(sin(2*pi*(1:7)/15)/2, 2), 50)
-# arg <- c(280, 0, .4, .5, .2, .4, .3, .5, .45, 1000, 'Z')
+# arg <- c(280, 1, .5, .5, .5, .5, .5, .5, .5, 1000, 'Z')
 
 # simulacao 
 n <- as.numeric(arg[1]); k <- 2; rho <- as.numeric(arg[-c(1, 2,length(arg)-0:1)]);
-beta <- c(rep(0.5, k-1),  as.numeric(arg[2]));n.desc <- 100;m <- n+n.desc; pfn.target <- .1
-X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -1, max = 1), m, (k-1)))
-# X1 <- cbind(1, sin(2*pi*(1:m)/21))
-colnames(X1) <- c('Intercept', kronecker("X_", 1:(k-1), paste, sep=''))
-X <- X1[1:n,]; Xprev <-  X1[(n+1):m,]
+beta <- c(rep(1, k-1),  as.numeric(arg[2]));n.desc <- 112; m <- n+n.desc; pfn.target <- .1
+# X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -1.4, max = -0.6), m, (k-1)))
+# X1 <- cbind(1, (.5*sin(2*pi*(1:m)/28)+runif(m,-1.25,-.75)))
+# X1 <- cbind(1, matrix( seq(from = -2, to = 1, length.out = m*(k-1)), m, (k-1)))
+# colnames(X1) <- c('Intercept', kronecker("X_", 1:(k-1), paste, sep=''))
+# X <- X1[1:n,]; Xprev <-  X1[(n+1):m,]
 REP <- as.numeric(arg[length(arg)-1])
 
-plot.ts(exp(X%*%beta)/(1 + exp(X%*%beta))[,1])
+# plot.ts((X%*%beta)[,1])
+# plot.ts(exp(X%*%beta)/(1 + exp(X%*%beta))[,1])
 
 est_glm <- yhat_glm <- std_glm <- est_MCP <- std_MCP <- est_MC <- std_MC <- fit_glmvet <- corte0 <- corte1 <- corte <- NULL
 pfp.insample.MCP <- pfp.insample.MC <- pfp.insample.glm <- pfn.insample.MCP <- pfn.insample.MC <- pfn.insample.glm <- acc.insample.MCP  <- acc.insample.MC <- acc.insample.glm <- NULL
@@ -64,6 +66,9 @@ ct.fim.vet <- prob <- fit_MCvet <- fit_MCPvet <- y.desc <- list()
 set.seed(444 + length(pfp.insample.glm))
 while(r <= REP){
   cat('Repl.', r)
+  X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -1.4, max = -0.6), m, (k-1)))
+  colnames(X1) <- c('Intercept', kronecker("X_", 1:(k-1), paste, sep=''))
+  X <- X1[1:n,]; Xprev <-  X1[(n+1):m,]
   ytotal <- gen(X = X1, beta = beta, rho = rho)
   y.desc[[r]] <- ytotal[(n+1):m]
   y <- ytotal[1:n]
@@ -130,7 +135,7 @@ while(r <= REP){
                       newY = y.desc[[r]], newX = Xprev,
                       LastY= y[n], LastX = X[n,], corte0 = corte0[r], corte1 = corte1[r])
     pfp.MCP[r] <- pr.MCP$pfp; pfn.MCP[r] <- pr.MCP$pfn; acc.MCP[r] <- pr.MCP$acc
-    #Escrita das variáveis 
+    #Escrita das variáveis
     {
       write.table(x = pfp.insample.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
       write.table(x = pfn.insample.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
@@ -161,7 +166,7 @@ while(r <= REP){
     cat('\n')
   }else{
     if(is.null(fit_MC)) cat('Deu ruim - Katiuski!\n')
-    if(is.null(fit_MC)) cat('Deu ruim - Periodic!\n')
+    if(is.null(fit_MCP)) cat('Deu ruim - Periodic!\n')
   }
 }
 
@@ -175,11 +180,16 @@ pf_mat <- rbind(pf_insample_mat, pf_out_mat)
 rownames(pf_mat) <- c('PFP - insample','PFN - insample','ACC - insample', 'PFP - out', 'PFN - out', 'ACC - out')
 colnames(pf_mat) <- c('GLM', 'MC','MCP')
 
-Bias <- cbind(c(colMeans(est_glm)-beta, rep(NA, length(rho))), c(colMeans(est_MC)-c(beta, rho[1]), rep(NA, length(rho)- 1)), (colMeans(est_MCP)-c(beta, rho)))
+Bias <- cbind(c(colMeans(est_glm)-beta, rep(NA, length(rho))),
+              c(colMeans(est_MC)-c(beta, rho[1]), rep(NA, length(rho)- 1)),
+              (colMeans(est_MCP)-c(beta, rho)))
 EP <- cbind(c(sqrt(colMeans(est_glm^2)-colMeans(est_glm)^2), rep(NA, length(rho))),
-            c(sqrt(colMeans(est_MC^2)-colMeans(est_MC)^2), rep(NA, length(rho)-1)), sqrt(colMeans(est_MCP^2)-colMeans(est_MCP)^2))
+            c(sqrt(colMeans(est_MC^2)-colMeans(est_MC)^2), rep(NA, length(rho)-1)),
+            sqrt(colMeans(est_MCP^2)-colMeans(est_MCP)^2))
 RMSE <- sqrt(Bias^2+EP^2)
-mean.std <- cbind(c(colMeans(std_glm), rep(NA, length(rho))), c(colMeans(std_MC,na.rm = T), rep(NA, length(rho)- 1)), colMeans(std_MCP))
+mean.std <- cbind(c(colMeans(std_glm), rep(NA, length(rho))),
+                  c(colMeans(std_MC,na.rm = T), rep(NA, length(rho)- 1)),
+                  colMeans(std_MCP))
 rownames(Bias) <- rownames(EP) <- rownames(RMSE) <- rownames(mean.std) <- names(colMeans(est_MCP))
 mat_Bias_RMSE <- cbind(Bias, RMSE); colnames(mat_Bias_RMSE) <- c('Bias - GLM', 'Bias - MC', 'Bias - MCP', 'RMSE - GLM', 'RMSE - MC', 'RMSE - MCP')
 
@@ -197,4 +207,3 @@ mat_Bias_RMSE
 mat.EP
 
 save(list = c('PFN_IN_GLM', 'PFN_IN_MC', 'PFN_IN_MCP', 'pf_mat', 'mat_Bias_RMSE', 'mat.EP'), file = paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/', arg[length(arg)], '/resultado.rds', sep = ''))
-# load(paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/C/resultado.rds', sep = ''))

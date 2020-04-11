@@ -18,7 +18,7 @@ z_test <- function(x){
   
   return(H_0)
 }
-sim <- LETTERS[5:15]
+sim <- c(LETTERS, paste0('A', LETTERS[1:5]))
 
 Z <- data.frame(beta = seq(0, 1, along.with = sim), glm = 0, MC = 0, MCP = 0)
 for(i in seq_along(sim)){
