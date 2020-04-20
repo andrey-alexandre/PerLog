@@ -35,7 +35,18 @@ get_season <- function(input_date){
 dados <- 
   readxl::read_excel(paste0(folder,"Dados/dados_NA.xls"))
 
-y <- dados$E1_O3 %>% replace_na
+y <- dados %>% 
+  select(data_=Data, E1_O3) %>% 
+  mutate(data_ = floor_date(data_, 'day'),
+         E1_O3 =  replace_na(E1_O3)) %>%
+  group_by(data_) %>% 
+  summarise(O3 = max(E1_O3)) %>%
+  .$O3 %>% 
+  (function(x) x>=80)
+date_ <- dados %>% 
+  select(data_=Data) %>% 
+  mutate(data_ = floor_date(data_, 'day')) %>% 
+  distinct
 X_pol <- dados %>% 
   select(data_=Data, no=E1_NO, no2=E1_NO2, CO=E1_CO) %>% 
   mutate(data_=ymd_hms(data_), hour_=hour(data_), 
@@ -44,7 +55,7 @@ X_pol <- dados %>%
          CO=replace_na(CO)) %>% 
   filter(between(hour_, 7, 13)) %>% 
   tidyr::pivot_wider(names_from=hour_, values_from=c(no, no2, CO)) %>% 
-  mutate(join_date=month(data_))
+  select(-data_)
 X_met <- dados %>% 
   select(data_=Data, Tem=E2_Temperatura, WS=E2_ScalarWindSpeed) %>% 
   mutate(data_=ymd_hms(data_), hour_=hour(data_), 
@@ -53,38 +64,100 @@ X_met <- dados %>%
   filter(between(hour_, 7, 13)) %>% 
   group_by(data_) %>% 
   summarise(Tem = max(Tem), WS = max(WS)) %>% 
-  mutate(join_date=month(data_))
+  select(-data_)
 X_oni <- 
   readr:: read_csv2(paste0(folder,"Dados/ONI.csv")) %>% 
   mutate(data_=ymd_hms(paste(YR, MON, '01 00:00:00', sep='/'))) %>% 
-  select(data_, oni=ANOM)
-season <- get_season(X_pol$data_)
-weekend_ <- weekend(X_pol$data_)
+  select(data_, oni=ANOM) %>% 
+  mutate(join_date=paste(month(data_), year(data_), sep='/')) %>% 
+  right_join(date_ %>% 
+               transmute(join_date=paste(month(data_), year(data_), sep='/')))
 
-model.matrix(~(.)^2, X_pol, contrasts.arg = NULL)
+ONI <- X_oni$oni
+season <- get_season(date_$data_)
+weekend_ <- weekend(date_$data_)
+fl_test <- year(date_$data_ ) > 2015
 
-matr<-cbind(matr, model.matrix(~(.)^2+ONI+ONI:season, X_met, contrasts.arg = NULL))
-matr<-cbind(matr, model.matrix(~ONI*(.), dados1))
+# Separa dados de treino e de test
+y_train <- y[!fl_test]; y_test <- y[fl_test]
+X_pol_train <- X_pol[!fl_test, ];X_pol_test <- X_pol[fl_test, ]
+X_met_train <- X_met[!fl_test, ];X_met_test <- X_met[fl_test, ]
+ONI_train <- ONI[!fl_test]; ONI_test <- ONI[fl_test]
+season_train <- season[!fl_test]; season_test <- season[fl_test]
+weekend_train <- weekend_[!fl_test]; weekend_test <- weekend_[fl_test]
 
-matr<-cbind(model.matrix(~week), model.matrix(~season), ONI, matr)
-matr<-cbind(model.matrix(~week*., data = data.frame(scale(pol))),
-            model.matrix(~season*., data = data.frame(scale(met))),
-            ONI, matr)
 
-dados1<-data.frame(pol.d)
-#matriz de planejamento
-matrp<-model.matrix(~(.)^2, dados1, contrasts.arg = NULL)
-# dados1<-data.frame(met)
-dados1<-data.frame(met.d)
-matrp<-cbind(matrp, model.matrix(~(.)^2+ONI.d+ONI.d:season.d, dados1, contrasts.arg = NULL))
-matrp<-cbind(matrp, model.matrix(~ONI.d*(.), dados1))
+#########################################
+### CRIAÇÃO DE MATRIZ DE PLANEJAMENTO ###
+#########################################
+# Matriz de treino
+matr <- model.matrix(~(.)^2, X_pol_train, contrasts.arg = NULL)
+matr <- cbind(matr, model.matrix(~(.)^2+ONI_train+ONI_train:season_train, X_met_train, contrasts.arg = NULL))
+matr <- cbind(matr, model.matrix(~ONI_train*(.), X_met_train))
+matr <- cbind(model.matrix(~weekend_train), model.matrix(~season_train), ONI_train, matr)
+matr <- cbind(model.matrix(~weekend_train*., data = data.frame(scale(X_pol_train))),
+              model.matrix(~season_train*., data = data.frame(scale(X_met_train))),
+              ONI_train, matr)
 
-matrp<-cbind(model.matrix(~week.d), model.matrix(~season.d), ONI.d, matrp)
-matrp<-cbind(model.matrix(~week.d*., data = data.frame(scale(pol.d))),
-             model.matrix(~season.d*., data = data.frame(scale(met.d))),
-             ONI.d, matrp)
-colnames(matrp)<-colnames(matr)
+# Matriz de teste
+matrp<-model.matrix(~(.)^2, X_pol_test, contrasts.arg = NULL)
+matrp<-cbind(matrp, model.matrix(~(.)^2+ONI_test+ONI_test:season_test, X_met_test, contrasts.arg = NULL))
+matrp<-cbind(matrp, model.matrix(~ONI_test*(.), X_met_test))
+
+matrp<-cbind(model.matrix(~weekend_test), model.matrix(~season_test), ONI_test, matrp)
+matrp<-cbind(model.matrix(~weekend_test*., data = data.frame(scale(X_pol_test))),
+             model.matrix(~season_test*., data = data.frame(scale(X_met_test))),
+             ONI_test, matrp)
+
+colnames(matr) <- gsub('_train', '', colnames(matr))
+colnames(matrp) <- colnames(matr)
+
 matr<-matr[,!duplicated(colnames(matr))]
 matr<-matr[,-1]
 matrp<-matrp[,!duplicated(colnames(matrp))]
 matrp<-matrp[,-1]
+
+#############
+### PESOS ###
+#############
+grupos <- month(date_$data_)
+grupos_train <- grupos[!fl_test]; grupos_test <- grupos[fl_test]
+
+##############
+### ALASSO ###
+##############
+
+ridge <- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=0, foldid = grupos_train,
+                   parallel=FALSE, standardize=TRUE)
+w3<-1/abs(matrix(coef(ridge, s=ridge$lambda.min)[,1][2:(ncol(matr)+1)]))^1 ## Using gamma = 1
+w3[w3[,1] == Inf] <- 999999999 ## Replacing values estimated as Infinite for 999999999
+
+lasso <- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=1,
+                   parallel = FALSE, standardize = TRUE, foldid = grupos_train,
+                   type.measure = 'auc', penalty.factor = w3)
+
+coef.lasso<-coef(lasso, s=lasso$lambda.min)[,1][2:(ncol(matr)+1)]
+nomes<-names(which(coef.lasso!=0))
+
+## Save selected covariates (in and out of sample)
+write.table(matr[,nomes], paste0(folder,"Dados/in_cov_UL",nlevels(week),".txt"), col.names = TRUE, row.names = FALSE)
+write.table(matrp[,nomes], paste0(folder,"Dados/out_cov_UL",nlevels(week),".txt"), col.names = TRUE, row.names = FALSE)
+
+###### with temporal weights  
+set.seed(555)
+temporal.weights<-(1:length(y_train)/length(y_train))
+ridge<- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=0, weights = temporal.weights,
+                  type.measure = 'auc', foldid = grupos_train,
+                  parallel=FALSE, standardize=TRUE)
+w3<-1/abs(matrix(coef(ridge, s=ridge$lambda.min)[,1][2:(ncol(matr)+1)]))^1 ## Using gamma = 1
+w3[w3[,1] == Inf] <- 999999999 ## Replacing values estimated as Infinite for 999999999
+
+lasso <- cv.glmnet(x = matr, y = y_train, family = 'binomial', alpha=1, weights = temporal.weights,
+                   parallel = FALSE, standardize = TRUE, foldid = grupos_train,
+                   type.measure = 'auc', penalty.factor = w3)
+
+coef.lasso<-coef(lasso, s=lasso$lambda.min)[,1][2:(ncol(matr)+1)]
+nomes<-names(which(coef.lasso!=0))
+## Save selected covariates (in and out of sample)
+write.table(matr[,nomes], paste(folder,"Dados/in_cov_WL",nlevels(week),".txt", sep=''), col.names = TRUE, row.names = FALSE)
+write.table(matrp[,nomes], paste(folder,"Dados/out_cov_WL",nlevels(week),".txt", sep=''), col.names = TRUE, row.names = FALSE)
