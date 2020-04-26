@@ -8,6 +8,7 @@ folder  <-  "/home/andrey/Projetos/PerLog/"
 #################
 library(dplyr)
 library(lubridate)
+require(glmnet)
 replace_na <- function(x){
   x <- ifelse(is.na(x), mean(x, na.rm=T), x)
   
@@ -16,6 +17,7 @@ replace_na <- function(x){
 weekend <- function(date_){
   weekday <- weekdays(date_)
   weekend <- ifelse(weekday %in% c('sábado', 'domingo'), 'Weekend', 'Weekday')
+  weekend <- factor(weekend, levels = c('Weekend', 'Weekday'), labels = c('Weekend', 'Weekday'))
   
   return(weekend)
 }
@@ -75,7 +77,8 @@ X_oni <-
 
 ONI <- X_oni$oni
 season <- get_season(date_$data_)
-weekend_ <- weekend(date_$data_)
+#week_ <- weekend(date_$data_)
+week_ <- weekdays(date_$data_); week_ <- factor(week_)
 fl_test <- year(date_$data_ ) > 2015
 
 # Separa dados de treino e de test
@@ -84,8 +87,10 @@ X_pol_train <- X_pol[!fl_test, ];X_pol_test <- X_pol[fl_test, ]
 X_met_train <- X_met[!fl_test, ];X_met_test <- X_met[fl_test, ]
 ONI_train <- ONI[!fl_test]; ONI_test <- ONI[fl_test]
 season_train <- season[!fl_test]; season_test <- season[fl_test]
-weekend_train <- weekend_[!fl_test]; weekend_test <- weekend_[fl_test]
+week_train <- week_[!fl_test]; week_test <- week_[fl_test]
 
+write.table(y_train, paste0(folder,"Dados/in_O3.txt"), col.names = TRUE, row.names = FALSE)
+write.table(y_test, paste0(folder,"Dados/out_O3.txt"), col.names = TRUE, row.names = FALSE)
 
 #########################################
 ### CRIAÇÃO DE MATRIZ DE PLANEJAMENTO ###
@@ -94,8 +99,8 @@ weekend_train <- weekend_[!fl_test]; weekend_test <- weekend_[fl_test]
 matr <- model.matrix(~(.)^2, X_pol_train, contrasts.arg = NULL)
 matr <- cbind(matr, model.matrix(~(.)^2+ONI_train+ONI_train:season_train, X_met_train, contrasts.arg = NULL))
 matr <- cbind(matr, model.matrix(~ONI_train*(.), X_met_train))
-matr <- cbind(model.matrix(~weekend_train), model.matrix(~season_train), ONI_train, matr)
-matr <- cbind(model.matrix(~weekend_train*., data = data.frame(scale(X_pol_train))),
+matr <- cbind(model.matrix(~week_train), model.matrix(~season_train), ONI_train, matr)
+matr <- cbind(model.matrix(~week_train*., data = data.frame(scale(X_pol_train))),
               model.matrix(~season_train*., data = data.frame(scale(X_met_train))),
               ONI_train, matr)
 
@@ -104,8 +109,8 @@ matrp<-model.matrix(~(.)^2, X_pol_test, contrasts.arg = NULL)
 matrp<-cbind(matrp, model.matrix(~(.)^2+ONI_test+ONI_test:season_test, X_met_test, contrasts.arg = NULL))
 matrp<-cbind(matrp, model.matrix(~ONI_test*(.), X_met_test))
 
-matrp<-cbind(model.matrix(~weekend_test), model.matrix(~season_test), ONI_test, matrp)
-matrp<-cbind(model.matrix(~weekend_test*., data = data.frame(scale(X_pol_test))),
+matrp<-cbind(model.matrix(~week_test), model.matrix(~season_test), ONI_test, matrp)
+matrp<-cbind(model.matrix(~week_test*., data = data.frame(scale(X_pol_test))),
              model.matrix(~season_test*., data = data.frame(scale(X_met_test))),
              ONI_test, matrp)
 
@@ -139,9 +144,9 @@ lasso <- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=1,
 coef.lasso<-coef(lasso, s=lasso$lambda.min)[,1][2:(ncol(matr)+1)]
 nomes<-names(which(coef.lasso!=0))
 
-## Save selected covariates (in and out of sample)
-write.table(matr[,nomes], paste0(folder,"Dados/in_cov_UL",nlevels(week),".txt"), col.names = TRUE, row.names = FALSE)
-write.table(matrp[,nomes], paste0(folder,"Dados/out_cov_UL",nlevels(week),".txt"), col.names = TRUE, row.names = FALSE)
+  ## Save selected covariates (in and out of sample)
+write.table(matr[,nomes], paste0(folder,"Dados/in_cov_UL",nlevels(week_),".txt"), col.names = TRUE, row.names = FALSE)
+write.table(matrp[,nomes], paste0(folder,"Dados/out_cov_UL",nlevels(week_),".txt"), col.names = TRUE, row.names = FALSE)
 
 ###### with temporal weights  
 set.seed(555)
@@ -159,5 +164,5 @@ lasso <- cv.glmnet(x = matr, y = y_train, family = 'binomial', alpha=1, weights 
 coef.lasso<-coef(lasso, s=lasso$lambda.min)[,1][2:(ncol(matr)+1)]
 nomes<-names(which(coef.lasso!=0))
 ## Save selected covariates (in and out of sample)
-write.table(matr[,nomes], paste(folder,"Dados/in_cov_WL",nlevels(week),".txt", sep=''), col.names = TRUE, row.names = FALSE)
-write.table(matrp[,nomes], paste(folder,"Dados/out_cov_WL",nlevels(week),".txt", sep=''), col.names = TRUE, row.names = FALSE)
+write.table(matr[,nomes], paste(folder,"Dados/in_cov_WL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)
+write.table(matrp[,nomes], paste(folder,"Dados/out_cov_WL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)
