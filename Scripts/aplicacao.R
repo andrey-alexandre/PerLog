@@ -35,7 +35,7 @@ get_season <- function(input_date){
 ### PREPROCESSING ###
 #####################
 dados <- 
-  readxl::read_excel(paste0(folder,"Dados/dados_NA.xls"))
+  readxl::read_excel(paste0(folder,"Dados/dados_NA.xlsx"))
 
 y <- dados %>% 
   select(data_=Data, E1_O3) %>% 
@@ -56,7 +56,7 @@ X_pol <- dados %>%
          no=replace_na(no), no2=replace_na(no2),
          CO=replace_na(CO)) %>% 
   filter(between(hour_, 7, 13)) %>% 
-  tidyr::pivot_wider(names_from=hour_, values_from=c(no, no2, CO)) %>% 
+  group_by(data_) %>% summarise(no = max(no), no2 = max(no2), CO = max(CO)) %>% 
   select(-data_)
 X_met <- dados %>% 
   select(data_=Data, Tem=E2_Temperatura, WS=E2_ScalarWindSpeed) %>% 
@@ -77,8 +77,8 @@ X_oni <-
 
 ONI <- X_oni$oni
 season <- get_season(date_$data_)
-#week_ <- weekend(date_$data_)
-week_ <- weekdays(date_$data_); week_ <- factor(week_)
+week_ <- weekend(date_$data_)
+# week_ <- weekdays(date_$data_); week_ <- factor(week_)
 fl_test <- year(date_$data_ ) > 2015
 
 # Separa dados de treino e de test
@@ -119,9 +119,13 @@ colnames(matrp) <- colnames(matr)
 
 matr<-matr[,!duplicated(colnames(matr))]
 matr<-matr[,-1]
+scale_ <- caret::preProcess(matr); matr <- predict(scale_, matr)
+
 matrp<-matrp[,!duplicated(colnames(matrp))]
 matrp<-matrp[,-1]
+matrp <- predict(scale_, matrp)
 
+saveRDS(scale_, paste(folder,"Dados/scaling",nlevels(week_),".rds", sep=''))
 #############
 ### PESOS ###
 #############
@@ -144,7 +148,7 @@ lasso <- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=1,
 coef.lasso<-coef(lasso, s=lasso$lambda.min)[,1][2:(ncol(matr)+1)]
 nomes<-names(which(coef.lasso!=0))
 
-  ## Save selected covariates (in and out of sample)
+## Save selected covariates (in and out of sample)
 write.table(matr[,nomes], paste0(folder,"Dados/in_cov_UL",nlevels(week_),".txt"), col.names = TRUE, row.names = FALSE)
 write.table(matrp[,nomes], paste0(folder,"Dados/out_cov_UL",nlevels(week_),".txt"), col.names = TRUE, row.names = FALSE)
 
@@ -166,3 +170,24 @@ nomes<-names(which(coef.lasso!=0))
 ## Save selected covariates (in and out of sample)
 write.table(matr[,nomes], paste(folder,"Dados/in_cov_WL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)
 write.table(matrp[,nomes], paste(folder,"Dados/out_cov_WL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)
+
+###### with proportional temporal weights  
+set.seed(555)
+weigth.aux <- 1/prop.table(table(y_train))
+temporal.weights<-(1:length(y_train)/length(y_train))
+temporal.weights <- ifelse(y_train, temporal.weights*weigth.aux[2], temporal.weights*weigth.aux[1])
+ridge<- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=0, weights = temporal.weights,
+                  type.measure = 'auc', foldid = grupos_train,
+                  parallel=FALSE, standardize=TRUE)
+w3<-1/abs(matrix(coef(ridge, s=ridge$lambda.min)[,1][2:(ncol(matr)+1)]))^1 ## Using gamma = 1
+w3[w3[,1] == Inf] <- 999999999 ## Replacing values estimated as Infinite for 999999999
+
+lasso <- cv.glmnet(x = matr, y = y_train, family = 'binomial', alpha=1, weights = temporal.weights,
+                   parallel = FALSE, standardize = TRUE, foldid = grupos_train,
+                   type.measure = 'auc', penalty.factor = w3)
+
+coef.lasso<-coef(lasso, s=lasso$lambda.min)[,1][2:(ncol(matr)+1)]
+nomes<-names(which(coef.lasso!=0))
+## Save selected covariates (in and out of sample)
+write.table(matr[,nomes], paste(folder,"Dados/in_cov_PWL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)
+write.table(matrp[,nomes], paste(folder,"Dados/out_cov_PWL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)

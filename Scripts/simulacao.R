@@ -72,17 +72,18 @@ while(r <= REP){
   ytotal <- gen(X = X1, beta = beta, rho = rho)
   y.desc[[r]] <- ytotal[(n+1):m]
   y <- ytotal[1:n]
+  w <- mean(y); w <- ifelse(y == 1, 1/w, 1/(1-w))
   #lassim  <-  cv.glmnet(x=matr, y=O3, family = 'binomial', alpha=1, standardize = TRUE)
   fit_glm1 <-  glm(y~X-1, family = 'binomial')
   fit_glmvet[[r]] <-  (fit_glm1)
   fit_glm <-  summary(fit_glm1)$coefficients
   #lambda <-  rbind(lambda, lassim$lambda)
   yhat_glm <- rbind(yhat_glm,fitted(fit_glm1))
-  fit_MC <- tryCatch(logistic_MC(resp = y, covar = X, par0 = c(beta, mean(rho)), trace = 0),
+  fit_MC <- tryCatch(logistic_MC(resp = y, covar = X, par0 = c(beta, mean(rho)), w0=w, trace = 0),
                      error = function(e){NULL})
   fit_MCvet[[r]] <- fit_MC
   # fit_MCP <- logistic_MCP(resp = y, covar = X, par0 = c(beta, rho), trace = 0)
-  fit_MCP <- tryCatch(logistic_MC(resp = y, covar = X, par0 = c(beta, rho), trace = 0),
+  fit_MCP <- tryCatch(logistic_MC(resp = y, covar = X, par0 = c(beta, rho), w0=w, trace = 0),
                       error = function(e){NULL})
   fit_MCPvet[[r]] <- fit_MCP
   if(!is.null(fit_MCP) & !is.null(fit_MC)){
