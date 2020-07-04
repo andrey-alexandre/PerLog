@@ -268,80 +268,93 @@ gen <- function(X, beta, rho, li=0.000000001, ls=0.999999999){
 #################
 
 min.pfp.MC <- function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.01),
-                       pfn.target=.05, y, prob, li=0.000000001, ls=0.999999999){
+                       pfn.target=.05, y, prob, s, li=0.000000001, ls=0.999999999){
   # INICIO FUNCAO
-  sens <- espec <- pfp <- pfn <- acc <- matrix(data = NA, nrow = length(corte0), ncol = length(corte1))
-  n <- length(y)
-  nenhum.menor.que.pfn.target=TRUE;pfp.min <- 1
-  for(l in 1:length(corte0)){
-    for(j in 1:length(corte1)){
-      classif <-  rep(0,n)
-      for(i in 2:n){
-        if(y[i-1]==0){
-          if(prob[i]>corte0[l]){classif[i] <- 1}
-        }else{
-          if(prob[i]>corte1[j]){classif[i] <- 1}
-        }
-      }
-      A <- table(y[2:n], classif[2:n])
-      preds <- sort(unique(classif[2:n])); trues <- sort(unique(y[2:n]))
-      if(all(dim(A)==2)){
-        espec[l,j] <-  A[1,1]/sum(A[1,]); sens[l,j] <-  A[2,2]/sum(A[2,])
-        pfp[l,j] <- A[1,2]/sum(A[,2]); pfn[l,j] <- A[2,1]/sum(A[,1]); acc[l,j] <- sum(diag(A))/sum(A)
-      }else{
-        if(any(dim(A)==2)){
-          if(ncol(A)==1){
-            if(preds == 0)
-              espec[l,j] <- 1; sens[l,j] <- 0; pfp[l,j] <- A[1,1]/sum(A); pfn[l,j] <- A[2,1]/sum(A); acc[l,j] <- A[1,1]/sum(A)
-            if(preds == 1)
-              espec[l,j] <- 0; sens[l,j] <- 1; pfp[l,j] <- A[1,1]/sum(A); pfn[l,j] <- A[2,1]/sum(A); acc[l,j] <- A[2,1]/sum(A)
+  sens <- espec <- pfp <- pfn <- acc <- array(data = NA, dim = c(length(corte0),  length(corte1), s))
+  corte0min <- corte1min <- pfn.min <- acc.min <- NA
+  n <- length(y); per <- NA
+  nenhum.menor.que.pfn.target=TRUE; pfp.min <- rep(1, s)
+  for(period in 1:s){
+    for(corte0_aux in 1:length(corte0)){
+      for(corte1_aux in 1:length(corte1)){
+        classif <-  0; aux <- 1
+        
+        for(i in 2:n){
+          per[i] <- ifelse(i%%s == 0, s, i%%s)
+          
+          if(per[i] == period){
+            if(y[i-1]==0){
+              if(prob[i]>corte0[corte0_aux]){classif[aux] <- 1}else{classif[aux] <- 0}
+            }else{
+              if(prob[i]>corte1[corte1_aux]){classif[aux] <- 1}else{classif[aux] <- 0}
+            }
+            
+            aux <- aux + 1
           }
-          if(nrow(A)==1){
-            if(trues == 0)
-              espec[l,j] <- A[1,1]/sum(A); sens[l,j] <- A[1,2]/sum(A); pfp[l,j] <- A[1,2]/sum(A); pfn[l,j] <- 0; acc[l,j] <- A[1,1]/sum(A)
-            if(trues == 1)
-              espec[l,j] <- A[1,1]/sum(A); sens[l,j] <- A[1,2]/sum(A); pfp[l,j] <- 0; pfn[l,j] <- A[1,1]/sum(A); acc[l,j] <- A[1,2]/sum(A)
-          }
-        }else{
-          if(trues == 0 & preds == 0)
-            espec[l,j] <- 1; sens[l,j] <- 1; pfp[l,j] <- 0; pfn[l,j] <- 0; acc[l,j] <- 1
-          if(trues == 0 & preds == 1)
-            espec[l,j] <- 0; sens[l,j] <- 0; pfp[l,j] <- 1; pfn[l,j] <- 0; acc[l,j] <- 0
-          if(trues == 1 & preds == 0)
-            espec[l,j] <- 0; sens[l,j] <- 0; pfp[l,j] <- 0; pfn[l,j] <- 1; acc[l,j] <- 0
-          if(trues == 1 & preds == 1)
-            espec[l,j] <- 1; sens[l,j] <- 1; pfp[l,j] <- 0; pfn[l,j] <- 0; acc[l,j] <- 1
         }
-      }
-      # if(ncol(A)==1){                                                 
-      #   sens[l,j] <- classif[2]                                                      
-      #   espec[l,j] <-  1-sens[l,j]                                                     
-      #   pfp[l,j] <- A[1,]/sum(A[,1])
-      #   pfn[l,j] <- A[2,]/sum(A[,1])
-      #   if(classif[2] == 0) acc[l,j] <- A[1,1]/sum(A)
-      #   if(classif[2] == 1) acc[l,j] <- A[2,1]/ sum(A)
-      # }else{                                                                   
-      #   espec[l,j] <-  A[1,1]/sum(A[1,])
-      #   sens[l,j] <-  A[2,2]/sum(A[2,])
-      #   pfp[l,j] <- A[1,2]/sum(A[,2])
-      #   pfn[l,j] <- A[2,1]/sum(A[,1])
-      #   acc[l,j] <- sum(diag(A))/sum(A)
-      # }
-      # if((l==1)&(j==1)){pfp.min <- pfp[l,j]}
-      if( (pfn[l,j]<=pfn.target) & (pfp[l,j]<pfp.min) ){
-        corte0min <- corte0[l]
-        corte1min <- corte1[j]
-        pfp.min <- pfp[l,j]
-        pfn.min <- pfn[l,j]
-        acc.min <- acc[l,j]
-        nenhum.menor.que.pfn.target=FALSE
+        
+        A <- table(y[2:n], classif[2:n])
+        preds <- sort(unique(classif[2:n])); trues <- sort(unique(y[2:n]))
+        
+        if(all(dim(A)==2)){
+          espec[corte0_aux,corte1_aux, period] <-  A[1,1]/sum(A[1,]); sens[corte0_aux,corte1_aux, period] <-  A[2,2]/sum(A[2,])
+          pfp[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A[,2]); pfn[corte0_aux,corte1_aux, period] <- A[2,1]/sum(A[,1]); acc[corte0_aux,corte1_aux, period] <- sum(diag(A))/sum(A)
+        }else{
+          if(any(dim(A)==2)){
+            if(ncol(A)==1){
+              if(preds == 0)
+                espec[corte0_aux,corte1_aux, period] <- 1; sens[corte0_aux,corte1_aux, period] <- 0; pfp[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A); pfn[corte0_aux,corte1_aux, period] <- A[2,1]/sum(A); acc[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A)
+                if(preds == 1)
+                  espec[corte0_aux,corte1_aux, period] <- 0; sens[corte0_aux,corte1_aux, period] <- 1; pfp[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A); pfn[corte0_aux,corte1_aux, period] <- A[2,1]/sum(A); acc[corte0_aux,corte1_aux, period] <- A[2,1]/sum(A)
+            }
+            if(nrow(A)==1){
+              if(trues == 0)
+                espec[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A); sens[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A); pfp[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A); pfn[corte0_aux,corte1_aux, period] <- 0; acc[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A)
+                if(trues == 1)
+                  espec[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A); sens[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A); pfp[corte0_aux,corte1_aux, period] <- 0; pfn[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A); acc[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A)
+            }
+          }else{
+            if(trues == 0 & preds == 0)
+              espec[corte0_aux,corte1_aux, period] <- 1; sens[corte0_aux,corte1_aux, period] <- 1; pfp[corte0_aux,corte1_aux, period] <- 0; pfn[corte0_aux,corte1_aux, period] <- 0; acc[corte0_aux,corte1_aux, period] <- 1
+              if(trues == 0 & preds == 1)
+                espec[corte0_aux,corte1_aux, period] <- 0; sens[corte0_aux,corte1_aux, period] <- 0; pfp[corte0_aux,corte1_aux, period] <- 1; pfn[corte0_aux,corte1_aux, period] <- 0; acc[corte0_aux,corte1_aux, period] <- 0
+                if(trues == 1 & preds == 0)
+                  espec[corte0_aux,corte1_aux, period] <- 0; sens[corte0_aux,corte1_aux, period] <- 0; pfp[corte0_aux,corte1_aux, period] <- 0; pfn[corte0_aux,corte1_aux, period] <- 1; acc[corte0_aux,corte1_aux, period] <- 0
+                  if(trues == 1 & preds == 1)
+                    espec[corte0_aux,corte1_aux, period] <- 1; sens[corte0_aux,corte1_aux, period] <- 1; pfp[corte0_aux,corte1_aux, period] <- 0; pfn[corte0_aux,corte1_aux, period] <- 0; acc[corte0_aux,corte1_aux, period] <- 1
+          }
+        }
+        # if(ncol(A)==1){                                                 
+        #   sens[l,j] <- classif[2]                                                      
+        #   espec[l,j] <-  1-sens[l,j]                                                     
+        #   pfp[l,j] <- A[1,]/sum(A[,1])
+        #   pfn[l,j] <- A[2,]/sum(A[,1])
+        #   if(classif[2] == 0) acc[l,j] <- A[1,1]/sum(A)
+        #   if(classif[2] == 1) acc[l,j] <- A[2,1]/ sum(A)
+        # }else{                                                                   
+        #   espec[l,j] <-  A[1,1]/sum(A[1,])
+        #   sens[l,j] <-  A[2,2]/sum(A[2,])
+        #   pfp[l,j] <- A[1,2]/sum(A[,2])
+        #   pfn[l,j] <- A[2,1]/sum(A[,1])
+        #   acc[l,j] <- sum(diag(A))/sum(A)
+        # }
+        # if((l==1)&(j==1)){pfp.min <- pfp[l,j]}
+        if( (pfn[corte0_aux,corte1_aux, period]<=pfn.target) & (pfp[corte0_aux,corte1_aux, period]<pfp.min[period]) ){
+          corte0min[period] <- corte0[corte0_aux]
+          corte1min[period] <- corte1[corte1_aux]
+          pfp.min[period] <- pfp[corte0_aux,corte1_aux, period]
+          pfn.min[period] <- pfn[corte0_aux,corte1_aux, period]
+          acc.min[period] <- acc[corte0_aux,corte1_aux, period]
+          nenhum.menor.que.pfn.target=FALSE
+        }
       }
     }
   }
+
   if(nenhum.menor.que.pfn.target){
-    ind <- which(pfn == min(pfn), arr.ind = TRUE)[1,]; l <- ind[1]; j <- ind[2]
-    pfn.min <- pfn[l,j];pfp.min <- pfp[l,j]; acc.min <- acc[l,j]
-    corte0min <- corte0[l];corte1min <- corte1[j]
+    ind <- which(pfn == min(pfn), arr.ind = TRUE)[1,]; corte0_aux <- ind[1]; corte1_aux <- ind[2]
+    pfn.min <- pfn[corte0_aux,corte1_aux];pfp.min <- pfp[corte0_aux,corte1_aux]; acc.min <- acc[corte0_aux,corte1_aux]
+    corte0min <- corte0[corte0_aux];corte1min <- corte1[corte1_aux]
     warning(paste('Nao ha PFN < ',pfn.target,' (target)!\n Escolhendo PFP com PFN minimo!', sep=''))
   }
   return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, acc.min = acc.min,
@@ -479,13 +492,15 @@ prev.MC <- function(beta, rho, newY, newX, LastY, LastX, corte0, corte1){
   y.desc  <-  c(LastY, newY)
   X.desc  <-  rbind(LastX, newX)
   n.desc  <-  length(y.desc)
+  s <- length(rho)
   prob.p  <-  predi(beta.vet=beta, rho = rho, covar=X.desc, resp=y.desc)
   classif.MC <-  rep(0,(n.desc-1))
   for(i in 2:(n.desc)){
+    period <- ifelse(i%%s == 0, s, i%%s)
     if(y.desc[i-1]==0){
-      if(prob.p[i]>corte0){classif.MC[i-1] <- 1}
+      if(prob.p[i]>corte0[period]){classif.MC[i-1] <- 1}
     }else{
-      if(prob.p[i]>corte1){classif.MC[i-1] <- 1}
+      if(prob.p[i]>corte1[period]){classif.MC[i-1] <- 1}
     }
   }
   A <- table(newY,classif.MC)

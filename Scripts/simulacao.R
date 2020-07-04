@@ -8,7 +8,7 @@ source(paste(folder, 'Scripts/funcoes.R', sep = ''))
 # source(paste(folder, 'Scripts/FuncKat.R', sep = ''))
 arg <- commandArgs(trailingOnly = T)
 # arg <- c(200, round(sin(2*pi*(1:7)/15)/2, 2), 50)
-# arg <- c(280, 1, .5, .5, .5, .5, .5, .5, .5, 1000, 'Z')
+ arg <- c(280, 1, .5, .5, .5, .5, .5, .5, .5, 1000, 'Z')
 
 # simulacao 
 n <- as.numeric(arg[1]); k <- 2; rho <- as.numeric(arg[-c(1, 2,length(arg)-0:1)]);
@@ -23,9 +23,10 @@ REP <- as.numeric(arg[length(arg)-1])
 # plot.ts((X%*%beta)[,1])
 # plot.ts(exp(X%*%beta)/(1 + exp(X%*%beta))[,1])
 
-est_glm <- yhat_glm <- std_glm <- est_MCP <- std_MCP <- est_MC <- std_MC <- fit_glmvet <- corte0 <- corte1 <- corte <- NULL
+est_glm <- yhat_glm <- std_glm <- est_MCP <- std_MCP <- est_MC <- std_MC <- fit_glmvet <- corte <- NULL
 pfp.insample.MCP <- pfp.insample.MC <- pfp.insample.glm <- pfn.insample.MCP <- pfn.insample.MC <- pfn.insample.glm <- acc.insample.MCP  <- acc.insample.MC <- acc.insample.glm <- NULL
 pfp.glm <- pfn.glm <- acc.glm <- pfp.MCP <- pfn.MCP <- acc.MCP <- pfp.MC <- pfn.MC <- acc.MC <- NULL
+corte0.MC <- corte1.MC <- corte0.MCP <- corte1.MCP <- list()
 fit_glmvet <- fit_MCPvet  <- fit_MCvet <- list()
 est_glm <- std_glm <- matrix(nrow = REP, ncol = k)
 est_MCP <- std_MCP <- matrix(nrow = REP, ncol = (k+length(rho)))
@@ -111,30 +112,30 @@ while(r <= REP){
                        corte = corte[r])
     pfp.glm[r] <- pr.glm$pfp; pfn.glm[r] <- pr.glm$pfn; acc.glm[r] <- pr.glm$acc
     
-    in.sample.MC <- min.pfp.MC(y = y, prob = prob.MC, pfn.target = pfn.target)
-    pfp.insample.MC[r] <- in.sample.MC$pfp.min
-    pfn.insample.MC[r] <- in.sample.MC$pfn.min
-    acc.insample.MC[r] <- in.sample.MC$acc.min
-    corte0[r] <- in.sample.MC$corte0min
-    corte1[r] <- in.sample.MC$corte1min
+    in.sample.MC <- min.pfp.MC(y = y, prob = prob.MC, pfn.target = pfn.target, s = length(rho))
+    pfp.insample.MC[r] <- mean(in.sample.MC$pfp.min)
+    pfn.insample.MC[r] <- mean(in.sample.MC$pfn.min)
+    acc.insample.MC[r] <- mean(in.sample.MC$acc.min)
+    corte0.MC[[r]] <- in.sample.MC$corte0min
+    corte1.MC[[r]] <- in.sample.MC$corte1min
     
     pr.MC <- prev.MC(beta = fit_MCvet[[r]][1:k,1],
                      rho  = fit_MCvet[[r]][(k+1),1],
                      newY = y.desc[[r]], newX = Xprev,
-                     LastY= y[n], LastX = X[n,], corte0 = corte0[r], corte1 = corte1[r])
+                     LastY= y[n], LastX = X[n,], corte0 = corte0.MC[[r]], corte1 = corte1.MC[[r]])
     pfp.MC[r] <- pr.MC$pfp; pfn.MC[r] <- pr.MC$pfn; acc.MC[r] <- pr.MC$acc
     
-    in.sample.MCP <- min.pfp.MC(y = y, prob = prob.MCP, pfn.target = pfn.target)
-    pfp.insample.MCP[r] <- in.sample.MCP$pfp.min
-    pfn.insample.MCP[r] <- in.sample.MCP$pfn.min
-    acc.insample.MCP[r] <- in.sample.MCP$acc.min
-    corte0[r] <- in.sample.MCP$corte0min
-    corte1[r] <- in.sample.MCP$corte1min
+    in.sample.MCP <- min.pfp.MC(y = y, prob = prob.MCP, pfn.target = pfn.target, s = length(rho))
+    pfp.insample.MCP[r] <- mean(in.sample.MCP$pfp.min)
+    pfn.insample.MCP[r] <- mean(in.sample.MCP$pfn.min)
+    acc.insample.MCP[r] <- mean(in.sample.MCP$acc.min)
+    corte0.MCP[[r]] <- in.sample.MCP$corte0min
+    corte1.MCP[[r]] <- in.sample.MCP$corte1min
     
     pr.MCP <- prev.MC(beta = fit_MCPvet[[r]][1:k,1],
                       rho  = fit_MCPvet[[r]][(k+length(rho)),1],
                       newY = y.desc[[r]], newX = Xprev,
-                      LastY= y[n], LastX = X[n,], corte0 = corte0[r], corte1 = corte1[r])
+                      LastY= y[n], LastX = X[n,], corte0 = corte0.MCP[[r]], corte1 = corte1.MCP[[r]])
     pfp.MCP[r] <- pr.MCP$pfp; pfn.MCP[r] <- pr.MCP$pfn; acc.MCP[r] <- pr.MCP$acc
     #Escrita das variáveis
     {
