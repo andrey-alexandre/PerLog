@@ -273,7 +273,7 @@ min.pfp.MC <- function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.
   sens <- espec <- pfp <- pfn <- acc <- array(data = NA, dim = c(length(corte0),  length(corte1), s))
   corte0min <- corte1min <- pfn.min <- acc.min <- NA
   n <- length(y); per <- NA
-  nenhum.menor.que.pfn.target=TRUE; pfp.min <- rep(1, s)
+  nenhum.menor.que.pfn.target <- rep(TRUE, s); pfp.min <- rep(1, s)
   for(period in 1:s){
     for(corte0_aux in 1:length(corte0)){
       for(corte1_aux in 1:length(corte1)){
@@ -345,18 +345,19 @@ min.pfp.MC <- function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.
           pfp.min[period] <- pfp[corte0_aux,corte1_aux, period]
           pfn.min[period] <- pfn[corte0_aux,corte1_aux, period]
           acc.min[period] <- acc[corte0_aux,corte1_aux, period]
-          nenhum.menor.que.pfn.target=FALSE
+          nenhum.menor.que.pfn.target[period] <- FALSE
         }
       }
     }
+    
+    if(nenhum.menor.que.pfn.target[period]){
+      ind <- which(pfn[,,period] == min(pfn[,,period]), arr.ind = TRUE)[1,]; corte0_aux <- ind[1]; corte1_aux <- ind[2]
+      pfn.min[period] <- pfn[corte0_aux,corte1_aux, period];pfp.min[period] <- pfp[corte0_aux,corte1_aux, period]; acc.min[period] <- acc[corte0_aux,corte1_aux, period]
+      corte0min[period] <- corte0[corte0_aux];corte1min[period] <- corte1[corte1_aux]
+      warning(paste('Nao ha PFN < ',pfn.target,' (target)!\n Escolhendo PFP com PFN minimo!', sep=''))
+    }
   }
 
-  if(nenhum.menor.que.pfn.target){
-    ind <- which(pfn == min(pfn), arr.ind = TRUE)[1,]; corte0_aux <- ind[1]; corte1_aux <- ind[2]
-    pfn.min <- pfn[corte0_aux,corte1_aux];pfp.min <- pfp[corte0_aux,corte1_aux]; acc.min <- acc[corte0_aux,corte1_aux]
-    corte0min <- corte0[corte0_aux];corte1min <- corte1[corte1_aux]
-    warning(paste('Nao ha PFN < ',pfn.target,' (target)!\n Escolhendo PFP com PFN minimo!', sep=''))
-  }
   return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, acc.min = acc.min,
               corte0min=corte0min, corte1min=corte1min))
 }
