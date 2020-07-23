@@ -5,10 +5,9 @@ folder  <-  "/home/andrey/Projetos/PerLog/"
 # PC Casa Alessandro
 # folder <- '~/Dropbox/alessandro/UFES/aulas/2019_1/Orientacao_IC_Andrey/'
 source(paste(folder, 'Scripts/funcoes.R', sep = ''))
-# source(paste(folder, 'Scripts/FuncKat.R', sep = ''))
 arg <- commandArgs(trailingOnly = T)
 # arg <- c(200, round(sin(2*pi*(1:7)/15)/2, 2), 50)
-#arg <- c(280, .5, .4, .5, .2, .4, .3, .5, .45, 1, 'A')
+# arg <- c(280, .5, .4, .5, .2, .4, .3, .5, .45, 10, 'A')
 
 # simulacao 
 n <- as.numeric(arg[1]); k <- 2; rho <- as.numeric(arg[-c(1, 2,length(arg)-0:1)]);
@@ -64,7 +63,7 @@ est_MC <- std_MC <- matrix(nrow = REP, ncol = (k+1))
 r <- 1 + length(pfp.insample.glm)
 
 ct.fim.vet <- prob <- fit_MCvet <- fit_MCPvet <- y.desc <- list()
-set.seed(444 + length(pfp.insample.glm))
+set.seed(325 + length(pfp.insample.glm))
 while(r <= REP){
   cat('Repl.', r)
   X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -1.4, max = -0.6), m, (k-1)))
@@ -100,7 +99,7 @@ while(r <= REP){
     
     prob.glm  <-   predict(object = fit_glmvet[[r]], newx = X, type=c("response"))
     prob.MC <- predi(beta.vet=fit_MCvet[[r]][1:k,1],
-                         rho = fit_MCPvet[[r]][(1+k),1], covar=X, resp=y)
+                     rho = fit_MCvet[[r]][(1+k),1], covar=X, resp=y)
     prob.MCP  <-  prob[[r]]
     in.sample.glm <- min.pfp.glm(y = y, prob = prob.glm, pfn.target = pfn.target)
     pfp.insample.glm[r] <- in.sample.glm$pfp.min
@@ -113,11 +112,11 @@ while(r <= REP){
     pfp.glm[r] <- pr.glm$pfp; pfn.glm[r] <- pr.glm$pfn; acc.glm[r] <- pr.glm$acc
     
     in.sample.MC <- min.pfp.MC(y = y, prob = prob.MC, pfn.target = pfn.target, s = 1)
-    pfp.insample.MC[r] <- mean(in.sample.MC$pfp.min)
-    pfn.insample.MC[r] <- mean(in.sample.MC$pfn.min)
-    acc.insample.MC[r] <- mean(in.sample.MC$acc.min)
-    corte0.MC[[r]] <- in.sample.MC$corte0min
-    corte1.MC[[r]] <- in.sample.MC$corte1min
+    pfp.insample.MC[r] <- in.sample.MC$pfp
+    pfn.insample.MC[r] <- in.sample.MC$pfn
+    acc.insample.MC[r] <- in.sample.MC$acc
+    corte0.MC[[r]] <- in.sample.MC$c0
+    corte1.MC[[r]] <- in.sample.MC$c1
     
     pr.MC <- prev.MC(beta = fit_MCvet[[r]][1:k,1],
                      rho  = fit_MCvet[[r]][(k+1),1],
@@ -126,11 +125,11 @@ while(r <= REP){
     pfp.MC[r] <- pr.MC$pfp; pfn.MC[r] <- pr.MC$pfn; acc.MC[r] <- pr.MC$acc
     
     in.sample.MCP <- min.pfp.MC(y = y, prob = prob.MCP, pfn.target = pfn.target, s = length(rho))
-    pfp.insample.MCP[r] <- mean(in.sample.MCP$pfp.min)
-    pfn.insample.MCP[r] <- mean(in.sample.MCP$pfn.min)
-    acc.insample.MCP[r] <- mean(in.sample.MCP$acc.min)
-    corte0.MCP[[r]] <- in.sample.MCP$corte0min
-    corte1.MCP[[r]] <- in.sample.MCP$corte1min
+    pfp.insample.MCP[r] <- in.sample.MCP$pfp
+    pfn.insample.MCP[r] <- in.sample.MCP$pfn
+    acc.insample.MCP[r] <- in.sample.MCP$acc
+    corte0.MCP[[r]] <- in.sample.MCP$c0
+    corte1.MCP[[r]] <- in.sample.MCP$c1
     
     pr.MCP <- prev.MC(beta = fit_MCPvet[[r]][1:k,1],
                       rho  = fit_MCPvet[[r]][(k+length(rho)),1],
