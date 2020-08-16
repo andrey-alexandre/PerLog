@@ -69,7 +69,8 @@ X_met <- dados %>%
   select(-data_)
 X_oni <- 
   readr:: read_csv2(paste0(folder,"Dados/ONI.csv")) %>% 
-  mutate(data_=ymd_hms(paste(YR, MON, '01 00:00:00', sep='/'))) %>% 
+  mutate(data_=ymd_hms(paste(YR, MON, '01 00:00:00', sep='/')),
+         oni=as.numeric(stringr::str_replace(oni, ",", "."))) %>% 
   select(data_, oni=ANOM) %>% 
   mutate(join_date=paste(month(data_), year(data_), sep='/')) %>% 
   right_join(date_ %>% 
@@ -120,74 +121,17 @@ colnames(matrp) <- colnames(matr)
 matr<-matr[,!duplicated(colnames(matr))]
 matr<-matr[,-1]
 scale_ <- caret::preProcess(matr); matr <- predict(scale_, matr)
+write.table(matr, paste0(folder,"Dados/in_explan.txt"), col.names = TRUE, row.names = FALSE)
+
 
 matrp<-matrp[,!duplicated(colnames(matrp))]
 matrp<-matrp[,-1]
 matrp <- predict(scale_, matrp)
+write.table(matrp, paste0(folder,"Dados/out_explan.txt"), col.names = TRUE, row.names = FALSE)
 
-saveRDS(scale_, paste(folder,"Dados/scaling",nlevels(week_),".rds", sep=''))
 #############
 ### PESOS ###
 #############
 grupos <- month(date_$data_)
-grupos_train <- grupos[!fl_test]; grupos_test <- grupos[fl_test]
-
-##############
-### ALASSO ###
-##############
-
-ridge <- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=0, foldid = grupos_train,
-                   parallel=FALSE, standardize=TRUE)
-w3<-1/abs(matrix(coef(ridge, s=ridge$lambda.min)[,1][2:(ncol(matr)+1)]))^1 ## Using gamma = 1
-w3[w3[,1] == Inf] <- 999999999 ## Replacing values estimated as Infinite for 999999999
-
-lasso <- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=1,
-                   parallel = FALSE, standardize = TRUE, foldid = grupos_train,
-                   type.measure = 'auc', penalty.factor = w3)
-
-coef.lasso<-coef(lasso, s=lasso$lambda.min)[,1][2:(ncol(matr)+1)]
-nomes<-names(which(coef.lasso!=0))
-
-## Save selected covariates (in and out of sample)
-write.table(matr[,nomes], paste0(folder,"Dados/in_cov_UL",nlevels(week_),".txt"), col.names = TRUE, row.names = FALSE)
-write.table(matrp[,nomes], paste0(folder,"Dados/out_cov_UL",nlevels(week_),".txt"), col.names = TRUE, row.names = FALSE)
-
-###### with temporal weights  
-set.seed(555)
-temporal.weights<-(1:length(y_train)/length(y_train))
-ridge<- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=0, weights = temporal.weights,
-                  type.measure = 'auc', foldid = grupos_train,
-                  parallel=FALSE, standardize=TRUE)
-w3<-1/abs(matrix(coef(ridge, s=ridge$lambda.min)[,1][2:(ncol(matr)+1)]))^1 ## Using gamma = 1
-w3[w3[,1] == Inf] <- 999999999 ## Replacing values estimated as Infinite for 999999999
-
-lasso <- cv.glmnet(x = matr, y = y_train, family = 'binomial', alpha=1, weights = temporal.weights,
-                   parallel = FALSE, standardize = TRUE, foldid = grupos_train,
-                   type.measure = 'auc', penalty.factor = w3)
-
-coef.lasso<-coef(lasso, s=lasso$lambda.min)[,1][2:(ncol(matr)+1)]
-nomes<-names(which(coef.lasso!=0))
-## Save selected covariates (in and out of sample)
-write.table(matr[,nomes], paste(folder,"Dados/in_cov_WL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)
-write.table(matrp[,nomes], paste(folder,"Dados/out_cov_WL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)
-
-###### with proportional temporal weights  
-set.seed(555)
-weigth.aux <- 1/prop.table(table(y_train))
-temporal.weights<-(1:length(y_train)/length(y_train))
-temporal.weights <- ifelse(y_train, temporal.weights*weigth.aux[2], temporal.weights*weigth.aux[1])
-ridge<- cv.glmnet(x=matr, y=y_train, family = 'binomial', alpha=0, weights = temporal.weights,
-                  type.measure = 'auc', foldid = grupos_train,
-                  parallel=FALSE, standardize=TRUE)
-w3<-1/abs(matrix(coef(ridge, s=ridge$lambda.min)[,1][2:(ncol(matr)+1)]))^1 ## Using gamma = 1
-w3[w3[,1] == Inf] <- 999999999 ## Replacing values estimated as Infinite for 999999999
-
-lasso <- cv.glmnet(x = matr, y = y_train, family = 'binomial', alpha=1, weights = temporal.weights,
-                   parallel = FALSE, standardize = TRUE, foldid = grupos_train,
-                   type.measure = 'auc', penalty.factor = w3)
-
-coef.lasso<-coef(lasso, s=lasso$lambda.min)[,1][2:(ncol(matr)+1)]
-nomes<-names(which(coef.lasso!=0))
-## Save selected covariates (in and out of sample)
-write.table(matr[,nomes], paste(folder,"Dados/in_cov_PWL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)
-write.table(matrp[,nomes], paste(folder,"Dados/out_cov_PWL",nlevels(week_),".txt", sep=''), col.names = TRUE, row.names = FALSE)
+write.table(grupos[!fl_test], paste0(folder,"Dados/in_group.txt"), col.names = TRUE, row.names = FALSE)
+write.table(grupos[fl_test], paste0(folder,"Dados/out_group.txt"), col.names = TRUE, row.names = FALSE)

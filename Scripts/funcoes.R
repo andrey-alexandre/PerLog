@@ -50,7 +50,8 @@ permatrix <- function(vector, period_vec, period){
 ################################
 loglik  <-  function(par,out,w=NULL){
   resp <- out$resp; covar <- out$covar
-  li <- out$li; ls <- out$ls
+  li <- out$li; ls <- out$ls;
+  lamb <- out$lamb; alpha <- out$alpha;
   n <- length(resp); k <- dim(covar)[2]
   beta  <-  par[1:k]
   # rho  <-  exp(par[k+1])
@@ -210,7 +211,7 @@ loglik  <-  function(par,out,w=NULL){
   hess  <-  cbind(rbind((rowSums(x = d2ldb2, dims = 2)), t(rowSums(x = d2ldbdr, dims = 2))),
                   rbind( rowSums(x = d2ldbdr, dims = 2), rowSums(x = d2ldr2, dims = 2)))
   # 
-  logver <-  -sum(w*resp[2:n]*log(p[2:n]/(1-p[2:n]))+w*log(1-p[2:n]))
+  logver <-  -sum(w*resp[2:n]*log(p[2:n]/(1-p[2:n]))+w*log(1-p[2:n]) + lamb*(sum(alpha * abs(beta))))
   # # cat(logver,'\n')
   attr(logver, 'gradient')  <-  - grad
   attr(logver, 'hessian')  <-  - hess
@@ -222,9 +223,9 @@ gr.loglik <- function(par,out,w=NULL) return(attr(loglik(par,out,w), 'gradient')
 hess.loglik <- function(par,out,w=NULL) return(attr(loglik(par,out,w), 'hessian'))
 
 
-logistic_MC <- function(resp,covar,par0,w0=NULL,trace=2,li=0.000000001,ls=0.999999999){
-  out <- list(covar=covar, resp=resp, li=li, ls=ls)
-  otim  <-  optim(par = par0, w=w0, fn = loglik, gr = gr.loglik, out=out, method = "L-BFGS-B",
+logistic_MC <- function(resp,covar,par0, lamb=30, alpha=1, w0=NULL,trace=2,li=0.000000001,ls=0.999999999){
+  out <- list(covar=covar, resp=resp, li=li, ls=ls, lamb=lamb, alpha=alpha)
+  otim  <-  optim(par = par0, fn = loglik, gr = gr.loglik, out=out, w=w0, method = "L-BFGS-B",
                   lower = c(rep(-Inf, dim(covar)[2]), rep(-0.999999, length(par0) - dim(covar)[2])),
                   upper = c(rep(Inf, dim(covar)[2]), rep(0.999999, length(par0) - dim(covar)[2])), hessian = FALSE,
                   control = list(trace=trace))
@@ -266,193 +267,6 @@ gen <- function(X, beta, rho, li=0.000000001, ls=0.999999999){
 #################
 # PFP minimo MC #
 #################
-
-# min.pfp.MC <- function(corte0=seq(0.01,0.99,by=0.01), corte1=seq(0.01,0.99,by=0.01),
-#                        pfn.target=.05, y, prob, s, li=0.000000001, ls=0.999999999){
-#   # INICIO FUNCAO
-#   sens <- espec <- pfp <- pfn <- acc <- array(data = NA, dim = c(length(corte0),  length(corte1), s))
-#   # sens.tot <- espec.tot <- pfp.tot <- pfn.tot <- acc.tot <- array(data = NA, dim = c(length(corte0),  length(corte1)))
-#   corte0min <- corte1min <- pfn.min <- acc.min <- NA
-#   n <- length(y); per <- NA
-#   nenhum.menor.que.pfn.target <- rep(TRUE, s); pfp.min <- rep(1, s)
-#   per <- (1:n)%%s; per[per==0] <- s;
-#   cic <- (1:n)%/%s+1; cic[per==s] <- cic[per==s]-1;
-#   for(period in 1:s){
-#     for(corte0_aux in 1:length(corte0)){
-#       for(corte1_aux in 1:length(corte1)){
-#         classif <- rep(NA, n)
-#         vt <- NULL
-#         for(it in 1:(n%/%s)){
-#           t <- (it-1)*s + period
-#           if(t > 1){
-#             if(y[t-1] == 0 & prob[t] > corte0[corte0_aux]) classif[t] <- 1
-#             if(y[t-1] == 0 & prob[t] <= corte0[corte0_aux]) classif[t] <- 0
-#             if(y[t-1] == 1 & prob[t] > corte1[corte1_aux]) classif[t] <- 1
-#             if(y[t-1] == 1 & prob[t] <= corte1[corte1_aux]) classif[t] <- 0
-#             vt <- c(vt, t)
-#           }
-#         }
-#         A <- table(y[vt], classif[vt])
-#         if(all(dim(A)==2)){
-#           espec[corte0_aux,corte1_aux, period] <-  A[1,1]/sum(A[1,]); sens[corte0_aux,corte1_aux, period] <-  A[2,2]/sum(A[2,])
-#           pfp[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A[,2]); pfn[corte0_aux,corte1_aux, period] <- A[2,1]/sum(A[,1]); acc[corte0_aux,corte1_aux, period] <- sum(diag(A))/sum(A)
-#         }else{
-#           if(any(dim(A)==2)){
-#             if(ncol(A)==1){
-#               preds <- sort(unique(classif[vt]))
-#               if(preds == 0){
-#                 espec[corte0_aux,corte1_aux, period] <- 1
-#                 sens[corte0_aux,corte1_aux, period] <- 0
-#                 pfp[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A)
-#                 pfn[corte0_aux,corte1_aux, period] <- A[2,1]/sum(A)
-#                 acc[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A)
-#               }
-#               if(preds == 1){
-#                   espec[corte0_aux,corte1_aux, period] <- 0
-#                   sens[corte0_aux,corte1_aux, period] <- 1
-#                   pfp[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A)
-#                   pfn[corte0_aux,corte1_aux, period] <- A[2,1]/sum(A)
-#                   acc[corte0_aux,corte1_aux, period] <- A[2,1]/sum(A)
-#                 }
-#             }
-#             if(nrow(A)==1){
-#               trues <- sort(unique(y[vt]))
-#               if(trues == 0){
-#                 espec[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A)
-#                 sens[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A)
-#                 pfp[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A)
-#                 pfn[corte0_aux,corte1_aux, period] <- 0
-#                 acc[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A)
-#               }
-#               if(trues == 1){
-#                 espec[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A)
-#                 sens[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A)
-#                 pfp[corte0_aux,corte1_aux, period] <- 0
-#                 pfn[corte0_aux,corte1_aux, period] <- A[1,1]/sum(A)
-#                 acc[corte0_aux,corte1_aux, period] <- A[1,2]/sum(A)
-#               }
-#             }
-#           }else{
-#             preds <- sort(unique(classif[vt]))
-#             trues <- sort(unique(y[vt]))
-#             if(trues == 0 & preds == 0){
-#               espec[corte0_aux,corte1_aux, period] <- 1
-#               sens[corte0_aux,corte1_aux, period] <- 1
-#               pfp[corte0_aux,corte1_aux, period] <- 0
-#               pfn[corte0_aux,corte1_aux, period] <- 0
-#               acc[corte0_aux,corte1_aux, period] <- 1
-#             }
-#             if(trues == 0 & preds == 1){
-#               espec[corte0_aux,corte1_aux, period] <- 0
-#               sens[corte0_aux,corte1_aux, period] <- 0
-#               pfp[corte0_aux,corte1_aux, period] <- 1
-#               pfn[corte0_aux,corte1_aux, period] <- 0
-#               acc[corte0_aux,corte1_aux, period] <- 0
-#             }
-#             if(trues == 1 & preds == 0){
-#               espec[corte0_aux,corte1_aux, period] <- 0
-#               sens[corte0_aux,corte1_aux, period] <- 0
-#               pfp[corte0_aux,corte1_aux, period] <- 0
-#               pfn[corte0_aux,corte1_aux, period] <- 1
-#               acc[corte0_aux,corte1_aux, period] <- 0
-#             }
-#             if(trues == 1 & preds == 1){
-#               espec[corte0_aux,corte1_aux, period] <- 1
-#               sens[corte0_aux,corte1_aux, period] <- 1
-#               pfp[corte0_aux,corte1_aux, period] <- 0
-#               pfn[corte0_aux,corte1_aux, period] <- 0
-#               acc[corte0_aux,corte1_aux, period] <- 1
-#             }
-#           }
-#         }
-#         if((pfn[corte0_aux,corte1_aux, period]<=pfn.target) & (pfp[corte0_aux,corte1_aux, period]<pfp.min[period]) ){
-#           corte0min[period] <- corte0[corte0_aux]
-#           corte1min[period] <- corte1[corte1_aux]
-#           pfp.min[period] <- pfp[corte0_aux,corte1_aux, period]
-#           pfn.min[period] <- pfn[corte0_aux,corte1_aux, period]
-#           acc.min[period] <- acc[corte0_aux,corte1_aux, period]
-#           nenhum.menor.que.pfn.target[period] <- FALSE
-#         }
-#       }
-#     }
-#     if(nenhum.menor.que.pfn.target[period]){
-#       ind <- which(pfn[,,period] == min(pfn[,,period]), arr.ind = TRUE)[1,]; corte0_aux <- ind[1]; corte1_aux <- ind[2]
-#       pfn.min[period] <- pfn[corte0_aux,corte1_aux, period];pfp.min[period] <- pfp[corte0_aux,corte1_aux, period]; acc.min[period] <- acc[corte0_aux,corte1_aux, period]
-#       corte0min[period] <- corte0[corte0_aux];corte1min[period] <- corte1[corte1_aux]
-#       warning(paste('Nao ha PFN[',period,'] < ',pfn.target,' (target)!\n Escolhendo PFP com PFN minimo!', sep=''))
-#     }
-#   }
-#   
-#   classif <- rep(NA, n)
-#   vt <- NULL
-#   for(it in 1:(n%/%s)){
-#     for(period in 1:s){
-#       t <- (it-1)*s + period
-#       if(t > 1){
-#         if(y[t-1] == 0 & prob[t] > corte0min[period]) classif[t] <- 1
-#         if(y[t-1] == 0 & prob[t] <= corte0min[period]) classif[t] <- 0
-#         if(y[t-1] == 1 & prob[t] > corte1min[period]) classif[t] <- 1
-#         if(y[t-1] == 1 & prob[t] <= corte1min[period]) classif[t] <- 0
-#         vt <- c(vt, t)
-#       }
-#     }
-#   }
-#   A <- table(y[vt], classif[vt])
-#   if(all(dim(A)==2)){
-#     espec.tot <-  A[1,1]/sum(A[1,]);sens.tot <-  A[2,2]/sum(A[2,])
-#     pfp.tot <- A[1,2]/sum(A[,2]);pfn.tot <- A[2,1]/sum(A[,1]); acc.tot <- sum(diag(A))/sum(A)
-#   }else{
-#     if(any(dim(A)==2)){
-#       if(ncol(A)==1){
-#         preds <- sort(unique(classif[vt]))
-#         if(preds == 0){
-#           espec.tot <- 1; sens.tot <- 0
-#           pfp.tot <- A[1,1]/sum(A); pfn.tot <- A[2,1]/sum(A); acc.tot <- A[1,1]/sum(A)
-#         }
-#         if(preds == 1){
-#           espec.tot <- 0; sens.tot <- 1
-#           pfp.tot <- A[1,1]/sum(A); pfn.tot <- A[2,1]/sum(A); acc.tot <- A[2,1]/sum(A)
-#         }
-#       }
-#       if(nrow(A)==1){
-#         trues <- sort(unique(y[vt]))
-#         if(trues == 0){
-#           espec.tot <- A[1,1]/sum(A); sens.tot <- A[1,2]/sum(A)
-#           pfp.tot <- A[1,2]/sum(A); pfn.tot <- 0; acc.tot <- A[1,1]/sum(A)
-#         }
-#         if(trues == 1){
-#           espec.tot <- A[1,1]/sum(A); sens.tot <- A[1,2]/sum(A)
-#           pfp.tot <- 0; pfn.tot <- A[1,1]/sum(A); acc.tot <- A[1,2]/sum(A)
-#         }
-#       }
-#     }else{
-#       preds <- sort(unique(classif[vt]))
-#       trues <- sort(unique(y[vt]))
-#       if(trues == 0 & preds == 0){
-#         espec.tot <- 1; sens.tot <- 1
-#         pfp.tot <- 0; pfn.tot <- 0; acc.tot <- 1
-#       }
-#       if(trues == 0 & preds == 1){
-#         espec.tot <- 0; sens.tot <- 0
-#         pfp.tot <- 1; pfn.tot <- 0; acc.tot <- 0
-#       }
-#       if(trues == 1 & preds == 0){
-#         espec.tot <- 0; sens.tot <- 0
-#         pfp.tot <- 0; pfn.tot <- 1; acc.tot <- 0
-#       }
-#       if(trues == 1 & preds == 1){
-#         espec.tot <- 1; sens.tot <- 1
-#         pfp.tot <- 0; pfn.tot <- 0; acc.tot <- 1
-#       }
-#     }
-#   }
-#   
-#   return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, acc.min = acc.min,
-#               corte0min=corte0min, corte1min=corte1min,
-#               pfp.min.tot=pfp.tot, pfn.min.tot=pfn.tot, acc.min.tot = acc.tot))
-# }
-
-
 pfp.pfn.MC <- function(corte, out){
   y <- out$y; prob <- out$prob; s <- out$s
   N <- length(y); R <- N%/%s
@@ -474,10 +288,10 @@ pfp.pfn.MC <- function(corte, out){
   c <- length(which(y[2:N]==1 & yp[2:N]==0))
   d <- length(which(y[2:N]==1 & yp[2:N]==1))
   acc <- (a+d)/(a+b+c+d)
-  esp <- ifelse(a+b==0, 0, a/(a+b))
-  sen <- ifelse(c+d==0, 0, d/(c+d))
-  pfp <- ifelse(b+d==0, 0, b/(b+d))
-  pfn <- ifelse(a+c==0, 0, c/(a+c))
+  esp <- ifelse(a+b==0, (a+c)/(a+b+c+d), a/(a+b))
+  sen <- ifelse(c+d==0, (b+d)/(a+b+c+d), d/(c+d))
+  pfp <- ifelse(b+d==0, (a+b)/(a+b+c+d), b/(b+d))
+  pfn <- ifelse(a+c==0, (c+d)/(a+b+c+d), c/(a+c))
   return(list(pfp=pfp, pfn=pfn, sen=sen, esp=esp, acc=acc))
 }
 
@@ -508,11 +322,16 @@ min.pfp.MC <- function(corte.inic=NULL, lamb=30, pfn.target=.05,
   names(c0) <- names(c1) <- paste('v=',1:s,sep='')
   val <- pfp.pfn.MC(corte = c(c0, c1),
                     out = list(y=y, prob=prob, s=s))
+  
+  if(val$pfn > pfn.target)
+    warning(paste('PFN <= ',pfn.target,' (target) não encontrado!\n Escolhendo PFP com PFN minimo!', sep=''))
+  
   return(list(pfp=val$pfp,
               pfn=val$pfn,
               acc=val$acc,
               c0=c0,
               c1=c1,
+              attain.pfn.target=(val$pfn <= pfn.target),
               pfn.target=pfn.target))
 }
 
@@ -524,43 +343,23 @@ min.pfp.MC <- function(corte.inic=NULL, lamb=30, pfn.target=.05,
 
 min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
                         li=0.000000001, ls=0.999999999){
-  sens <- espec <- pfp <- pfn <- acc <- NULL
+  sen <- esp <- pfp <- pfn <- acc <- NULL
   pfn.min <- NULL
   nenhum.menor.que.pfn.target=TRUE;pfp.min <- 1
   for(j in 1:length(corte)){
-    classif <-  rep(0,(length(y)))
-    for(i in 1:length(y)){ if(prob[i]>corte[j]) classif[i] <- 1 }
-    A <- table(y,classif)
-    preds <- sort(unique(classif)); trues <- sort(unique(y))
-    if(all(dim(A)==2)){
-      espec[j] <-  A[1,1]/sum(A[1,]); sens[j] <-  A[2,2]/sum(A[2,])
-      pfp[j] <- A[1,2]/sum(A[,2]); pfn[j] <- A[2,1]/sum(A[,1]); acc[j] <- sum(diag(A))/sum(A)
-    }else{
-      if(any(dim(A)==2)){
-        if(ncol(A)==1){
-          if(preds == 0)
-            espec[j] <- 1; sens[j] <- 0; pfp[j] <- A[1,1]/sum(A); pfn[j] <- A[2,1]/sum(A); acc[j] <- A[1,1]/sum(A)
-            if(preds == 1)
-              espec[j] <- 0; sens[j] <- 1; pfp[j] <- A[1,1]/sum(A); pfn[j] <- A[2,1]/sum(A); acc[j] <- A[2,1]/sum(A)
-        }
-        if(nrow(A)==1){
-          if(trues == 0)
-            espec[j] <- A[1,1]/sum(A); sens[j] <- A[1,2]/sum(A); pfp[j] <- A[1,2]/sum(A); pfn[j] <- 0; acc[j] <- A[1,1]/sum(A)
-            if(trues == 1)
-              espec[j] <- A[1,1]/sum(A); sens[j] <- A[1,2]/sum(A); pfp[j] <- 0; pfn[j] <- A[1,1]/sum(A); acc[j] <- A[1,2]/sum(A)
-        }
-      }else{
-        if(trues == 0 & preds == 0)
-          espec[j] <- 1; sens[j] <- 1; pfp[j] <- 0; pfn[j] <- 0; acc[j] <- 1
-          if(trues == 0 & preds == 1)
-            espec[j] <- 0; sens[j] <- 0; pfp[j] <- 1; pfn[j] <- 0; acc[j] <- 0
-            if(trues == 1 & preds == 0)
-              espec[j] <- 0; sens[j] <- 0; pfp[j] <- 0; pfn[j] <- 1; acc[j] <- 0
-              if(trues == 1 & preds == 1)
-                espec[j] <- 1; sens[j] <- 1; pfp[j] <- 0; pfn[j] <- 0; acc[j] <- 1
-      }
-    }
-    if( (pfn[j]<=pfn.target) & (pfp[j]<pfp.min) ){
+    yp <- as.numeric(prob > corte[j])
+    
+    a <- length(which(y==0 & yp==0))
+    b <- length(which(y==0 & yp==1))
+    c <- length(which(y==1 & yp==0))
+    d <- length(which(y==1 & yp==1))
+    acc[j] <- (a+d)/(a+b+c+d)
+    esp[j] <- ifelse(a+b==0, (a+c)/(a+b+c+d), a/(a+b))
+    sen[j] <- ifelse(c+d==0, (b+d)/(a+b+c+d), d/(c+d))
+    pfp[j] <- ifelse(b+d==0, (a+b)/(a+b+c+d), b/(b+d))
+    pfn[j] <- ifelse(a+c==0, (c+d)/(a+b+c+d), c/(a+c))
+    
+    if((pfn[j]<=pfn.target) & (pfp[j]<pfp.min)){
       cortemin <- corte[j]
       pfp.min <- pfp[j]
       pfn.min <- pfn[j]
@@ -573,10 +372,14 @@ min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
     cortemin <- corte[which.min(pfn)]
     pfp.min <- pfp[which.min(pfn)]
     acc.min <- acc[which.min(pfn)]
-    warning(paste('Nao ha PFN < ',pfn.target,' (target)!\n Escolhendo PFP com PFN minimo!', sep=''))
+    warning(paste('PFN <= ',pfn.target,' (target) não encontrado!\n Escolhendo PFP com PFN minimo!', sep=''))
   }
-  return(list(pfp.min=pfp.min, pfn.target=pfn.target, pfn.min=pfn.min, acc.min = acc.min,
-              cortemin=cortemin))
+  return(list(pfp=pfp.min,
+              pfn=pfn.min,
+              acc = acc.min,
+              c=cortemin,
+              attain.pfn.target=!nenhum.menor.que.pfn.target,
+              pfn.target=pfn.target))
 }
 
 ############
@@ -588,156 +391,59 @@ min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
 prev.glm <- function(fit, newY=NULL, newX, corte, li=0.000000001, ls=0.999999999){#Only new covariates!!
   prob.glm.p  <- predict(object = fit, newx = newX, type=c("response"))
   n.desc <- dim(newX)[1]
-  classif.glm <-  rep(0,n.desc)
-  for(i in 1:n.desc){if(prob.glm.p[i]>corte) classif.glm[i] <- 1 }
+  
+  classif.glm <- as.numeric(prob.glm.p > corte)
+  
   if(!is.null(newY)){
-    A <- table(newY,classif.glm)
-    preds <- sort(unique(classif.glm)); trues <- sort(unique(newY))
-    if(all(dim(A)==2)){
-      espec.glm <-  A[1,1]/sum(A[1,]); sens.glm <-  A[2,2]/sum(A[2,])
-      pfp.glm <- A[1,2]/sum(A[,2]); pfn.glm <- A[2,1]/sum(A[,1]); acc.glm <- sum(diag(A))/sum(A)
-    }else{
-      if(any(dim(A)==2)){
-        if(ncol(A)==1){
-          if(preds == 0)
-            espec.glm <- 1; sens.glm <- 0; pfp.glm <- A[1,1]/sum(A); pfn.glm <- A[2,1]/sum(A); acc.glm <- A[1,1]/sum(A)
-            if(preds == 1)
-              espec.glm <- 0; sens.glm <- 1; pfp.glm <- A[1,1]/sum(A); pfn.glm <- A[2,1]/sum(A); acc.glm <- A[2,1]/sum(A)
-        }
-        if(nrow(A)==1){
-          if(trues == 0)
-            espec.glm <- A[1,1]/sum(A); sens.glm <- A[1,2]/sum(A); pfp.glm <- A[1,2]/sum(A); pfn.glm <- 0; acc.glm <- A[1,1]/sum(A)
-            if(trues == 1)
-              espec.glm <- A[1,1]/sum(A); sens.glm <- A[1,2]/sum(A); pfp.glm <- 0; pfn.glm <- A[1,1]/sum(A); acc.glm <- A[1,2]/sum(A)
-        }
-      }else{
-        if(trues == 0 & preds == 0)
-          espec.glm <- 1; sens.glm <- 1; pfp.glm <- 0; pfn.glm <- 0; acc.glm <- 1
-          if(trues == 0 & preds == 1)
-            espec.glm <- 0; sens.glm <- 0; pfp.glm <- 1; pfn.glm <- 0; acc.glm <- 0
-            if(trues == 1 & preds == 0)
-              espec.glm <- 0; sens.glm <- 0; pfp.glm <- 0; pfn.glm <- 1; acc.glm <- 0
-              if(trues == 1 & preds == 1)
-                espec.glm <- 1; sens.glm <- 1; pfp.glm <- 0; pfn.glm <- 0; acc.glm <- 1
-      }
-    }
-    # if(ncol(A)==1){
-    #   if(classif.glm[1]==1) sens.glm <- 1; acc.glm <- A[2,1]/sum(A)
-    #   if(classif.glm[1]==0) sens.glm <- 0; acc.glm <- A[1,1]/ sum(A)
-    #   espec.glm <- 1-sens.glm
-    # }else{
-    #   espec.glm <-  A[1,1]/sum(A[1,])
-    #   sens.glm <-  A[2,2]/sum(A[2,])
-    #   acc.glm <- sum(diag(A))/sum(A)
-    # }
-    # if(sens.glm==0){sens.glm <- li}
-    # if(sens.glm==1){sens.glm <- ls}
-    # if(espec.glm==0){espec.glm <- li}
-    # if(espec.glm==1){espec.glm <- ls}
-    # p <- mean(newY)
-    # phat.glm <- mean(classif.glm)
-    # pfp.glm <- 1-(p*sens.glm)/(p*sens.glm+(1-p)*(1-espec.glm))
-    # pfn.glm <- 1-(espec.glm*(1-p))/((1-sens.glm)*p+espec.glm*(1-p))
-    return(list(prev=classif.glm, pfp=pfp.glm, pfn=pfn.glm, acc = acc.glm))
+    a <- length(which(newY==0 & classif.glm==0))
+    b <- length(which(newY==0 & classif.glm==1))
+    c <- length(which(newY==1 & classif.glm==0))
+    d <- length(which(newY==1 & classif.glm==1))
+    acc <- (a+d)/(a+b+c+d)
+    esp <- ifelse(a+b==0, (a+c)/(a+b+c+d), a/(a+b))
+    sen <- ifelse(c+d==0, (b+d)/(a+b+c+d), d/(c+d))
+    pfp <- ifelse(b+d==0, (a+b)/(a+b+c+d), b/(b+d))
+    pfn <- ifelse(a+c==0, (c+d)/(a+b+c+d), c/(a+c))
+    return(list(prev=classif.glm, pfp=pfp, pfn=pfn, acc = acc))
   }
   else{
     return(list(prev=classif.glm))
   }
 }
 
-prev.MC <- function(beta, rho, newY, newX, LastY, LastX, corte0, corte1){
-  y.desc  <-  c(LastY, newY)
-  X.desc  <-  rbind(LastX, newX)
-  s <- length(rho)
-  N <- length(y.desc); R <- N%/%s
-  prob.p  <-  predi(beta.vet=beta, rho = rho, covar=X.desc, resp=y.desc)
+prev.MC <- function(beta, rho, newY, newX, y, X, corte0, corte1){
+  y.f  <-  c(y, newY)
+  X.f  <-  rbind(X, newX)
+  prob.f  <-  predi(beta.vet=beta, rho = rho, covar=X.f, resp=y.f)
 
+  s <- length(rho)
+  N <- length(y.f); R <- N%/%s
+  
+  N0 <- length(y)+1
+  
   classif.MC <- NULL
   for(r in 1:R){
     for(v in 1:s) {
       t <- (r-1)*s+v
       if(t>1){
-        if(y[t-1] == 0 & prob.p[t] <= corte0[v]) classif.MC[t] <- 0
-        if(y[t-1] == 0 & prob.p[t] > corte0[v]) classif.MC[t] <- 1
-        if(y[t-1] == 1 & prob.p[t] <= corte1[v]) classif.MC[t] <- 0
-        if(y[t-1] == 1 & prob.p[t] > corte1[v]) classif.MC[t] <- 1
+        if(y.f[t-1] == 0 & prob.f[t] <= corte0[v]) classif.MC[t] <- 0
+        if(y.f[t-1] == 0 & prob.f[t] > corte0[v]) classif.MC[t] <- 1
+        if(y.f[t-1] == 1 & prob.f[t] <= corte1[v]) classif.MC[t] <- 0
+        if(y.f[t-1] == 1 & prob.f[t] > corte1[v]) classif.MC[t] <- 1
       }
     }
   }
-  a <- length(which(y[2:N]==0 & classif.MC[2:N]==0))
-  b <- length(which(y[2:N]==0 & classif.MC[2:N]==1))
-  c <- length(which(y[2:N]==1 & classif.MC[2:N]==0))
-  d <- length(which(y[2:N]==1 & classif.MC[2:N]==1))
+  a <- length(which(y.f[N0:N]==0 & classif.MC[N0:N]==0))
+  b <- length(which(y.f[N0:N]==0 & classif.MC[N0:N]==1))
+  c <- length(which(y.f[N0:N]==1 & classif.MC[N0:N]==0))
+  d <- length(which(y.f[N0:N]==1 & classif.MC[N0:N]==1))
+  
   acc.MC <- (a+d)/(a+b+c+d)
-  esp.MC <- ifelse(a+b==0, 0, a/(a+b))
-  sen.MC <- ifelse(c+d==0, 0, d/(c+d))
-  pfp.MC <- ifelse(b+d==0, 0, b/(b+d))
-  pfn.MC <- ifelse(a+c==0, 0, c/(a+c))
+  esp.MC <- ifelse(a+b==0, (a+c)/(a+b+c+d), a/(a+b))
+  sen.MC <- ifelse(c+d==0, (b+d)/(a+b+c+d), d/(c+d))
+  pfp.MC <- ifelse(b+d==0, (a+b)/(a+b+c+d), b/(b+d))
+  pfn.MC <- ifelse(a+c==0, (c+d)/(a+b+c+d), c/(a+c))
   
-  # classif.MC <- rep(NA, n.desc-1)
-  # vt <- NULL
-  # for(it in 1:(n.desc%/%s)){
-  #   for(period in 1:s){
-  #     t <- (it-1)*s + period
-  #     if(t > 1){
-  #       if(y.desc[t-1] == 0 & prob.p[t] > corte0[period]) classif.MC[t] <- 1
-  #       if(y.desc[t-1] == 0 & prob.p[t] <= corte0[period]) classif.MC[t] <- 0
-  #       if(y.desc[t-1] == 1 & prob.p[t] > corte1[period]) classif.MC[t] <- 1
-  #       if(y.desc[t-1] == 1 & prob.p[t] <= corte1[period]) classif.MC[t] <- 0
-  #       vt <- c(vt, t)
-  #     }
-  #   }
-  # }
-  # A <- table(newY[vt], classif.MC[vt])
-  # if(all(dim(A)==2)){
-  #   espec.MC <-  A[1,1]/sum(A[1,]);sens.MC <-  A[2,2]/sum(A[2,])
-  #   pfp.MC <- A[1,2]/sum(A[,2]);pfn.MC <- A[2,1]/sum(A[,1]); acc.MC <- sum(diag(A))/sum(A)
-  # }else{
-  #   if(any(dim(A)==2)){
-  #     if(ncol(A)==1){
-  #       preds <- sort(unique(classif.MC[vt]))
-  #       if(preds == 0){
-  #         espec.MC <- 1; sens.MC <- 0
-  #         pfp.MC <- A[1,1]/sum(A); pfn.MC <- A[2,1]/sum(A); acc.MC <- A[1,1]/sum(A)
-  #       }
-  #       if(preds == 1){
-  #         espec.MC <- 0; sens.MC <- 1
-  #         pfp.MC <- A[1,1]/sum(A); pfn.MC <- A[2,1]/sum(A); acc.MC <- A[2,1]/sum(A)
-  #       }
-  #     }
-  #     if(nrow(A)==1){
-  #       trues <- sort(unique(y[vt]))
-  #       if(trues == 0){
-  #         espec.MC <- A[1,1]/sum(A); sens.MC <- A[1,2]/sum(A)
-  #         pfp.MC <- A[1,2]/sum(A); pfn.MC <- 0; acc.MC <- A[1,1]/sum(A)
-  #       }
-  #       if(trues == 1){
-  #         espec.MC <- A[1,1]/sum(A); sens.MC <- A[1,2]/sum(A)
-  #         pfp.MC <- 0; pfn.MC <- A[1,1]/sum(A); acc.MC <- A[1,2]/sum(A)
-  #       }
-  #     }
-  #   }else{
-  #     preds <- sort(unique(classif.MC[vt]))
-  #     trues <- sort(unique(y[vt]))
-  #     if(trues == 0 & preds == 0){
-  #       espec.MC <- 1; sens.MC <- 1
-  #       pfp.MC <- 0; pfn.MC <- 0; acc.MC <- 1
-  #     }
-  #     if(trues == 0 & preds == 1){
-  #       espec.MC <- 0; sens.MC <- 0
-  #       pfp.MC <- 1; pfn.MC <- 0; acc.MC <- 0
-  #     }
-  #     if(trues == 1 & preds == 0){
-  #       espec.MC <- 0; sens.MC <- 0
-  #       pfp.MC <- 0; pfn.MC <- 1; acc.MC <- 0
-  #     }
-  #     if(trues == 1 & preds == 1){
-  #       espec.MC <- 1; sens.MC <- 1
-  #       pfp.MC <- 0; pfn.MC <- 0; acc.MC <- 1
-  #     }
-  #   }
-  # }
-  
-  return(list(prev=classif.MC, pfp=pfp.MC, pfn=pfn.MC, acc = acc.MC))
+  return(list(prev=classif.MC[N0:N], pfp=pfp.MC, pfn=pfn.MC, acc = acc.MC))
 }
 
