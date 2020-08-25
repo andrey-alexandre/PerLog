@@ -299,8 +299,8 @@ min.pfp.MC.func <- function(corte, out){
   out1 <- list(y=out$y, prob=out$prob, s=out$s)
   lamb <- out$lamb; pfn.target <- out$pfn.target
   res <- pfp.pfn.MC(corte = corte, out = out1)
-  func <- res$pfp + lamb*max(0, (res$pfn-pfn.target))
-  return(-func)
+  func <- res$sen + lamb*max(0, (1-res$esp-pfn.target))
+  return(func)
 }
 
 min.pfp.MC <- function(corte.inic=NULL, lamb=30, pfn.target=.05,
@@ -329,6 +329,8 @@ min.pfp.MC <- function(corte.inic=NULL, lamb=30, pfn.target=.05,
   return(list(pfp=val$pfp,
               pfn=val$pfn,
               acc=val$acc,
+              esp=val$esp,
+              sen=val$sen,
               c0=c0,
               c1=c1,
               attain.pfn.target=(val$pfn <= pfn.target),
@@ -341,11 +343,11 @@ min.pfp.MC <- function(corte.inic=NULL, lamb=30, pfn.target=.05,
 # PFP minimo glm #
 ##################
 
-min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
+min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), sen.target=.05, y, prob,
                         li=0.000000001, ls=0.999999999){
   sen <- esp <- pfp <- pfn <- acc <- NULL
   pfn.min <- NULL
-  nenhum.menor.que.pfn.target=TRUE;pfp.min <- 1
+  nenhum.menor.que.pfn.target=TRUE;esp.max <- 0
   for(j in 1:length(corte)){
     yp <- as.numeric(prob > corte[j])
     
@@ -359,10 +361,12 @@ min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
     pfp[j] <- ifelse(b+d==0, (a+b)/(a+b+c+d), b/(b+d))
     pfn[j] <- ifelse(a+c==0, (c+d)/(a+b+c+d), c/(a+c))
     
-    if((pfn[j]<=pfn.target) & (pfp[j]<pfp.min)){
+    if((1-sen[j]<=sen.target) & (esp[j]>esp.max)){
       cortemin <- corte[j]
       pfp.min <- pfp[j]
       pfn.min <- pfn[j]
+      esp.max <- esp[j]
+      sen.min <- sen[j]
       acc.min <- acc[j]
       nenhum.menor.que.pfn.target=FALSE
     }
@@ -371,15 +375,19 @@ min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), pfn.target=.05, y, prob,
     pfn.min <- min(pfn)
     cortemin <- corte[which.min(pfn)]
     pfp.min <- pfp[which.min(pfn)]
+    esp.max <- esp[which.min(pfn)]
+    sen.min <- sen[which.min(pfn)]
     acc.min <- acc[which.min(pfn)]
-    warning(paste('PFN <= ',pfn.target,' (target) não encontrado!\n Escolhendo PFP com PFN minimo!', sep=''))
+    warning(paste('SEN >= ',sen.target,' (target) não encontrado!\n Escolhendo PFP com PFN minimo!', sep=''))
   }
   return(list(pfp=pfp.min,
               pfn=pfn.min,
+              esp=esp.max,
+              sen=sen.min,
               acc = acc.min,
               c=cortemin,
               attain.pfn.target=!nenhum.menor.que.pfn.target,
-              pfn.target=pfn.target))
+              sen.target=sen.target))
 }
 
 ############
@@ -404,7 +412,7 @@ prev.glm <- function(fit, newY=NULL, newX, corte, li=0.000000001, ls=0.999999999
     sen <- ifelse(c+d==0, (b+d)/(a+b+c+d), d/(c+d))
     pfp <- ifelse(b+d==0, (a+b)/(a+b+c+d), b/(b+d))
     pfn <- ifelse(a+c==0, (c+d)/(a+b+c+d), c/(a+c))
-    return(list(prev=classif.glm, pfp=pfp, pfn=pfn, acc = acc))
+    return(list(prev=classif.glm, pfp=pfp, pfn=pfn, esp=esp, sen=sen, acc = acc))
   }
   else{
     return(list(prev=classif.glm))
@@ -444,6 +452,6 @@ prev.MC <- function(beta, rho, newY, newX, y, X, corte0, corte1){
   pfp.MC <- ifelse(b+d==0, (a+b)/(a+b+c+d), b/(b+d))
   pfn.MC <- ifelse(a+c==0, (c+d)/(a+b+c+d), c/(a+c))
   
-  return(list(prev=classif.MC[N0:N], pfp=pfp.MC, pfn=pfn.MC, acc = acc.MC))
+  return(list(prev=classif.MC[N0:N], pfp=pfp.MC, pfn=pfn.MC, esp = esp.MC, sen = sen.MC, acc = acc.MC))
 }
 

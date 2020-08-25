@@ -26,7 +26,7 @@ sel_matr <- cbind(1, sel_matr); sel_matrp <- cbind(1, sel_matrp)
 colnames(sel_matr) <- colnames(sel_matrp) <- nomes
 
 v <- 1:ncol(sel_matr)
-sel_matr1 <- cbind(sel_matr[,v], O3)
+sel_matr1 <- cbind(sel_matr[,], O3)
 colnames(sel_matr1) <- c(colnames(sel_matr[,v]),'O3ar')
 sel_matr1
 
@@ -64,8 +64,8 @@ for(i in c('UL', 'WL', 'PWL')){
   fit_glm <- cv.glmnet(x=sel_matr, y=O3, family = 'binomial', alpha=1,
                        parallel = FALSE, standardize = TRUE, foldid = grupos_train,
                        type.measure = 'auc', penalty.factor = w3)
-  fit_MC <- logistic_MC(resp = O3, covar = sel_matr[,v], par0 = c(as.vector(t(coef(fit_glm))), 0), w0=w, alpha=w3)
-  fit_MCP <-logistic_MC(resp = O3, covar = sel_matr[,v], par0 = c(as.vector(t(coef(fit_glm))), rep(0, 7)), w0=w, alpha=w3)
+  fit_MC <- logistic_MC(resp = O3, covar = sel_matr[,-1], par0 = c(as.vector(t(coef(fit_glm))), 0), w0=w, alpha=w3)
+  fit_MCP <-logistic_MC(resp = O3, covar = sel_matr[,-1], par0 = c(as.vector(t(coef(fit_glm))), rep(0, 7)), w0=w, alpha=w3)
   
   # out <- list(covar=sel_matr1, resp=O3, li=0.000000001, ls=0.999999999)
   # par0 = rep(0.5, ncol(sel_matr1) + 7)
@@ -77,7 +77,7 @@ for(i in c('UL', 'WL', 'PWL')){
   pfn_target <- .1
   
   pglm <- predict(object = fit_glm, newx = sel_matrp, type = 'response')
-  minpfpGLM <- min.pfp.glm(y=O3, prob=pglm, pfn.target = pfn_target)
+  minpfpGLM <- min.pfp.glm(y=O3, prob=pglm, sen.target = pfn_target)
   prevGLM <- prev.glm(fit=fit_glm, newY=as.matrix(O3p), newX=sel_matrp, corte=minpfpGLM$c)
   
   pMC <- predi(beta.vet=fit_MC[1:length(fit_glm$coefficients)],
@@ -100,7 +100,10 @@ for(i in c('UL', 'WL', 'PWL')){
              Modelo = c('RL', 'RLA', 'RLAP'), 
              PFP = c(prevGLM$pfp, prevMC$pfp, prevMCP$pfp), 
              PFN = c(prevGLM$pfn, prevMC$pfn, prevMCP$pfn),
+             ESP = c(prevGLM$esp, prevMC$esp, prevMCP$esp),
+             SEN = c(prevGLM$sen, prevMC$sen, prevMCP$sen),
              ACC = c(prevGLM$acc, prevMC$acc, prevMCP$acc)) %>% 
+    mutate_if(is.numeric, function(x) round(x, 3))%>%
     write.table(paste0(folder,"Dados/out_result.txt"), col.names = TRUE, row.names = FALSE, append = T)
 }
 

@@ -70,7 +70,7 @@ X_met <- dados %>%
 X_oni <- 
   readr:: read_csv2(paste0(folder,"Dados/ONI.csv")) %>% 
   mutate(data_=ymd_hms(paste(YR, MON, '01 00:00:00', sep='/')),
-         oni=as.numeric(stringr::str_replace(oni, ",", "."))) %>% 
+         ANOM=as.numeric(stringr::str_replace(ANOM, ",", "."))) %>% 
   select(data_, oni=ANOM) %>% 
   mutate(join_date=paste(month(data_), year(data_), sep='/')) %>% 
   right_join(date_ %>% 

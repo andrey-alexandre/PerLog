@@ -3,12 +3,12 @@ nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 .5 
 nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 280 .5 0.28 0.15 0.23 0.48 0.36 0.31 0.35 1000 C > /home/andrey/Projetos/PerLog/C.txt &
 nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 .5 0.28 0.15 0.23 0.48 0.36 0.31 0.35 1000 D > /home/andrey/Projetos/PerLog/D.txt &
 
-nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 280 .5 0 0 0 0 0 0 0 1000 E > /home/andrey/Projetos/PerLog/E.txt &
-nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 .5 0 0 0 0 0 0 0 1000 F > /home/andrey/Projetos/PerLog/F.txt &
-nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 280 .5 .5 .5 .5 .5 .5 .5 .5 1000 G > /home/andrey/Projetos/PerLog/G.txt &
-nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 .5 .5 .5 .5 .5 .5 .5 .5 1000 H > /home/andrey/Projetos/PerLog/H.txt &
-nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 280 .5 .6 .3 .1 -.2 -.4 -.2 .2 1000 I > /home/andrey/Projetos/PerLog/I.txt &
-nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 .5 .6 .3 .1 -.2 -.4 -.2 .2 1000 J > /home/andrey/Projetos/PerLog/J.txt &
+nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 280 1 0 0 0 0 0 0 0 1000 E > /home/andrey/Projetos/PerLog/E.txt &
+nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 1 0 0 0 0 0 0 0 1000 F > /home/andrey/Projetos/PerLog/F.txt &
+nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 280 1 .5 .5 .5 .5 .5 .5 .5 1000 G > /home/andrey/Projetos/PerLog/G.txt &
+nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 1 .5 .5 .5 .5 .5 .5 .5 1000 H > /home/andrey/Projetos/PerLog/H.txt &
+nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 280 1 .6 .3 .1 -.2 -.4 -.2 .2 1000 I > /home/andrey/Projetos/PerLog/I.txt &
+nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 1 .6 .3 .1 -.2 -.4 -.2 .2 1000 J > /home/andrey/Projetos/PerLog/J.txt &
 
 nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 0.0 .6 .3 .1 -.2 -.4 -.2 .2 1000 Forte_B_A > /home/andrey/Projetos/PerLog/Forte_B_A.txt &
 nohup Rscript --vanilla /home/andrey/Projetos/PerLog/Scripts/simulacao.R 840 0.1 .6 .3 .1 -.2 -.4 -.2 .2 1000 Forte_B_B > /home/andrey/Projetos/PerLog/Forte_B_B.txt &
