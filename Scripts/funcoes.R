@@ -2,7 +2,7 @@
 ### LIBRARIES ###
 #################
 library(dplyr)
-
+library(lbfgs)
 ##############
 # Predito MC #
 ##############
@@ -48,10 +48,11 @@ permatrix <- function(vector, period_vec, period){
 ################################
 # Funcao da logverossimilhanca #
 ################################
-loglik  <-  function(par,out,w=NULL){
+loglik  <-  function(par_,out,w=NULL){
   resp <- out$resp; covar <- out$covar
   li <- out$li; ls <- out$ls;
   lamb <- out$lamb; alpha <- out$alpha;
+  par <- par_/alpha
   n <- length(resp); k <- dim(covar)[2]
   beta  <-  par[1:k]
   # rho  <-  exp(par[k+1])
@@ -67,7 +68,7 @@ loglik  <-  function(par,out,w=NULL){
   p[1]  <-  theta[1]
   
   c1  <-  theta[2:n]*(1-theta[2:n])
-  c1aux  <-  theta[2:n-1]*(1-theta[2:n-1]); c1aux <- c(0, c1aux)
+  c1aux1  <-  theta[2:n-1]*(1-theta[2:n-1]); c1aux <- c(0, c1aux1)
   c2  <-  theta[2:n-1]/(1-theta[2:n-1])
   c3  <-  (1-theta[2:n-1])/theta[2:n-1]
   c4  <-  (theta[2:n-1]^(-.5))*((1-theta[2:n-1])^(-1.5))
@@ -80,7 +81,9 @@ loglik  <-  function(par,out,w=NULL){
   # c5[c5==-Inf] <- -999999999999999999999999;c5[c5==Inf] <- 999999999999999999999999
   A <- sqrt(c1*c1aux[-1])
   B <- sqrt(c1/c1aux[-1])
-  p[2:n] <- theta[2:n] + rho[per]*B*(resp[2:n-1] - theta[2:n-1])
+  # p[2:n] <- theta[2:n] + rho[per]*B*(resp[2:n-1] - theta[2:n-1])
+  
+  p[2:n] <- theta[2:n] + rho[per]*sqrt(c1)*(resp[2:n-1]-theta[2:n-1])/sqrt(c1aux1)#p_{y_{t-1}}, t>=2
   
   # p[2:n]  <-  theta[2:n] - rho[per]*sqrt(c1)*(sqrt(c2)-resp[2:n-1]*(sqrt(c2)+sqrt(c3)))
   
@@ -91,14 +94,17 @@ loglik  <-  function(par,out,w=NULL){
   
   dBdv0 <- .5*(1-2*theta[2:n])/A
   dBdv1 <- -.5*(1-2*theta[2:n-1])*B/c1aux[-1]
+  # 
+  # dpdv0 <- 1 + rho[per]*(resp[2:n-1]-theta[2:n-1])*dBdv0
+  # dpdv1 <- rho[per]*(dBdv1*(resp[2:n-1]-theta[2:n-1])-B)
   
-  dpdv0 <- 1 + rho[per]*(resp[2:n-1]-theta[2:n-1])*dBdv0
-  dpdv1 <- rho[per]*(dBdv1*(resp[2:n-1]-theta[2:n-1])-B)
+  dpdv0 <- 1+.5*rho[per]*(1-2*theta[2:n])*(resp[2:n-1]-theta[2:n-1])/sqrt(c1*c1aux1)
+  dpdv1 <- -.5*rho[per]*sqrt(c1)*(resp[2:n-1]-theta[2:n-1])*(1-2*theta[2:n-1])/(c1aux1^1.5)
   
   dv0db <- c1*covar[2:n,]
   dv0db_aux <- theta[1]*(1-theta[1])*covar[1,,drop=FALSE]
   
-  dv1db <- c1aux[-1]*covar[2:n-1,]
+  dv1db <- c1aux1*covar[2:n-1,]
   
   dpdb <- dpdv0*dv0db + dpdv1*dv1db #b = beta, B = B mesmo
   
@@ -106,7 +112,7 @@ loglik  <-  function(par,out,w=NULL){
   
   mat.aux <- NULL
   for(v in 1:s) mat.aux <- cbind(mat.aux, ifelse(per==v, 1, 0))
-  dpdr <- B*(resp[2:n-1]-theta[2:n-1])*mat.aux
+  dpdr <- (resp[2:n-1]-theta[2:n-1])*sqrt(c1)*mat.aux/sqrt(c1aux1)
   
   dldr <- dldp*dpdr
   
@@ -129,8 +135,14 @@ loglik  <-  function(par,out,w=NULL){
   # dpdrho <- permatrix(vector = dpdrho, period_vec = per, period = s)
   # dldrho  <-  dldp*dpdrho
   
+  # del <- 0.5
+  # dpendb <- -lamb*alpha*as.numeric(beta < -del) +
+  #   lamb*alpha*as.numeric(beta > del) +
+  #   lamb*alpha*beta*as.numeric(beta <= del & beta >= -del)/del
+  # # dpendb <- 2*lamb*alpha*beta
+  # dpendrho <- rep(0, s)
   # gradient
-  grad  <-  c(colSums(w*dldb), colSums(w*dldr))
+  grad  <-  c(colMeans(w*dldb), colMeans(w*dldr))/alpha
   
   #hessian
   # d2ldp2 <-  - ( 1 - p - p ^2) / ( (1-p)^2 * p^2 ); d2ldp2 <- d2ldp2[2:n-1]
@@ -211,10 +223,12 @@ loglik  <-  function(par,out,w=NULL){
   hess  <-  cbind(rbind((rowSums(x = d2ldb2, dims = 2)), t(rowSums(x = d2ldbdr, dims = 2))),
                   rbind( rowSums(x = d2ldbdr, dims = 2), rowSums(x = d2ldr2, dims = 2)))
   # 
-  logver <-  -sum(w*resp[2:n]*log(p[2:n]/(1-p[2:n]))+w*log(1-p[2:n]) + lamb*(sum(alpha * abs(beta))))
+  logver <-  -mean(w*resp[2:n]*log(p[2:n])+w*(1-resp[2:n])*log(1-p[2:n]))
+  # logver <-  -mean(w*resp[2:n]*log(p[2:n])+w*(1-resp[2:n])*log(1-p[2:n])) + lamb*(sum(alpha * beta^2))
+  # logver <-  sum(w*resp[2:n]*log(p[2:n])+w*(1-resp[2:n])*log(1-p[2:n])) - lamb*(sum(alpha * abs(beta)))
   # # cat(logver,'\n')
-  attr(logver, 'gradient')  <-  - grad
-  attr(logver, 'hessian')  <-  - hess
+  attr(logver, 'gradient')  <-  -grad
+  attr(logver, 'hessian')  <-  -hess
   return(logver)
 }
 
@@ -222,18 +236,30 @@ loglik  <-  function(par,out,w=NULL){
 gr.loglik <- function(par,out,w=NULL) return(attr(loglik(par,out,w), 'gradient'))
 hess.loglik <- function(par,out,w=NULL) return(attr(loglik(par,out,w), 'hessian'))
 
-
-logistic_MC <- function(resp,covar,par0, lamb=30, alpha=1, w0=NULL,trace=2,li=0.000000001,ls=0.999999999){
+logistic_MC <- function(resp,covar,par0, lamb=0, alpha=1, w0=NULL,trace=0,li=0.001,ls=0.999, maxiter=500){
   out <- list(covar=covar, resp=resp, li=li, ls=ls, lamb=lamb, alpha=alpha)
-  otim  <-  optim(par = par0, fn = loglik, gr = gr.loglik, out=out, w=w0, method = "L-BFGS-B",
-                  lower = c(rep(-Inf, dim(covar)[2]), rep(-0.999999, length(par0) - dim(covar)[2])),
-                  upper = c(rep(Inf, dim(covar)[2]), rep(0.999999, length(par0) - dim(covar)[2])), hessian = FALSE,
-                  control = list(trace=trace))
+  if(lamb==0){
+    otim  <-  optim(par = par0, fn = loglik, gr = gr.loglik, out=out, w=w0, method = "L-BFGS-B",
+                    lower = c(rep(-Inf, dim(covar)[2]), rep(-0.999999, length(par0) - dim(covar)[2])),
+                    upper = c(rep(Inf, dim(covar)[2]), rep(0.999999, length(par0) - dim(covar)[2])),
+                    hessian = FALSE, control = list(trace=trace))
+    seotim <- diag(solve(hess.loglik(par = otim$par, out = out, w=w0)))
+    mat.res <- cbind(otim$par, seotim, 2*(1-pnorm(abs(otim$par/seotim))))
+    colnames(mat.res) <- c('Estimate','Std.Error','p-value')
+  }else{
+    par00 <- par0*alpha
+    otim <- lbfgs(call_eval = loglik, call_grad = gr.loglik, vars = par00, out=out, w=w0,
+                  invisible = as.numeric(trace==0),
+                  orthantwise_c = lamb#,
+                  # orthantwise_start = 0,
+                  # orthantwise_end = dim(covar)[2]
+                  )
+    mat.res <- cbind(otim$par/alpha)
+    colnames(mat.res) <- c('Estimate')
+  }
+  # otim$par <- ifelse(otim$par < 10^-5, 0, otim$par)
   # seotim <- sqrt(diag(solve(otim$hessian)))
-  seotim  <- sqrt(ifelse(diag(solve(hess.loglik(par = otim$par, out = out, w=w0))) <= 0, li, diag(solve(hess.loglik(par = otim$par, out = out, w=w0)))))
-  mat.res <- cbind(otim$par, seotim, 2*(1-pnorm(abs(otim$par/seotim))))
-  colnames(mat.res) <- c('Estimate','Std.Error','p-value')
-  # row.names(mat.res)[dim(covar)[2]+1] <- 'lambda'
+  # seotim  <- sqrt(ifelse(diag(solve(hess.loglik(par = otim$par, out = out, w=w0))) <= 0, li, diag(solve(hess.loglik(par = otim$par, out = out, w=w0)))))
   row.names(mat.res) <- c(colnames(covar), paste0('rho', seq(length(par0)-dim(covar)[2])))
   return(mat.res)
 }
