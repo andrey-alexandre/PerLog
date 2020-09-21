@@ -5,9 +5,15 @@ folder  <-  "/home/andrey/Projetos/PerLog/"
 # PC Casa Alessandro
 # folder <- '~/Dropbox/alessandro/UFES/aulas/2019_1/Orientacao_IC_Andrey/'
 source(paste(folder, 'Scripts/funcoes.R', sep = ''))
+list_mean <- function(list_, name){
+  out <- list_ %>% map(~{.x[name]}) %>% unlist %>% mean
+  
+  return(out)
+}
+
 arg <- commandArgs(trailingOnly = T)
 # arg <- c(200, round(sin(2*pi*(1:7)/15)/2, 2), 50)
-# arg <- c(280, 1, .4, .5, .2, .4, .3, .5, .45, 10, 'A')
+arg <- c(280, 1, .4, .5, .2, .4, .3, .5, .45, 10, 'Z')
 
 # simulacao 
 n <- as.numeric(arg[1]); k <- 2; rho <- as.numeric(arg[-c(1, 2,length(arg)-0:1)]);
@@ -23,8 +29,8 @@ REP <- as.numeric(arg[length(arg)-1])
 # plot.ts(exp(X%*%beta)/(1 + exp(X%*%beta))[,1])
 
 est_glm <- yhat_glm <- std_glm <- est_MCP <- std_MCP <- est_MC <- std_MC <- fit_glmvet <- corte <- NULL
-pfp.insample.MCP <- pfp.insample.MC <- pfp.insample.glm <- pfn.insample.MCP <- pfn.insample.MC <- pfn.insample.glm <- acc.insample.MCP  <- acc.insample.MC <- acc.insample.glm <- NULL
-pfp.glm <- pfn.glm <- acc.glm <- pfp.MCP <- pfn.MCP <- acc.MCP <- pfp.MC <- pfn.MC <- acc.MC <- NULL
+pfp.insample.MCP <- pfp.insample.MC <- pfp.insample.glm <- sen.insample.MCP <- sen.insample.MC <- sen.insample.glm <- acc.insample.MCP  <- acc.insample.MC <- acc.insample.glm <- NULL
+pfp.glm <- sen.glm <- acc.glm <- pfp.MCP <- sen.MCP <- acc.MCP <- pfp.MC <- sen.MC <- acc.MC <- NULL
 corte0.MC <- corte1.MC <- corte0.MCP <- corte1.MCP <- list()
 fit_glmvet <- fit_MCPvet  <- fit_MCvet <- list()
 est_glm <- std_glm <- matrix(nrow = REP, ncol = k)
@@ -36,34 +42,11 @@ attain.pfn.target.glm <- attain.pfn.target.MC <- attain.pfn.target.MCP <- NULL
 {
   if(!dir.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/'))) dir.create(path = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/'), recursive = T)
   if(!dir.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/', arg[length(arg)], '/'))) dir.create(path = paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/', arg[length(arg)], '/'), recursive = T)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'))) pfp.insample.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'))) pfn.insample.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.glm.csv'))) acc.insample.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.glm.csv'))) pfp.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.glm.csv'))) pfn.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.glm.csv'))) acc.glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.glm.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_glm.csv'))) est_glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_glm.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_glm.csv'))) std_glm <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_glm.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MC.csv'))) pfp.insample.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MC.csv'))) pfn.insample.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MC.csv'))) acc.insample.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MC.csv'))) pfp.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MC.csv'))) pfn.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.MC.csv'))) acc.MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.MC.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_MC.csv'))) est_MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_MC.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_MC.csv'))) std_MC <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_MC.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MCP.csv'))) pfp.insample.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MCP.csv'))) pfn.insample.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MCP.csv'))) acc.insample.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MCP.csv'))) pfp.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MCP.csv'))) pfn.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.MCP.csv'))) acc.MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_acc.MCP.csv'), stringsAsFactors = F, header = F) %>% unlist()
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_MCP.csv'))) est_MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_est_MCP.csv'), stringsAsFactors = F, header = F)
-  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_MCP.csv'))) std_MCP <- read.csv(file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/parcial_std_MCP.csv'), stringsAsFactors = F, header = F)
+  if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/resultados.rds'))) load(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/resultados.rds'))
 }
 r <- 1 + length(pfp.insample.glm)
 
-ct.fim.vet <- prob <- fit_MCvet <- fit_MCPvet <- y.desc <- list()
+ct.fim.vet <- prob <- fit_MCvet <- fit_MCPvet <- y.desc <- results <- list()
 set.seed(325 + length(pfp.insample.glm))
 while(r <= REP){
   cat('Repl.', r)
@@ -105,7 +88,7 @@ while(r <= REP){
     std_MCP[r,] <- fit_MCP[,2]
     
     # prob[[r]] <- predi(beta.vet=fit_MCPvet[[r]][1:k,1],
-                       # rho = fit_MCPvet[[r]][(1:length(rho)+k),1], covar=X, resp=y)
+    # rho = fit_MCPvet[[r]][(1:length(rho)+k),1], covar=X, resp=y)
     
     prob.glm  <-   predict(object = fit_glmvet[[r]], newx = X, type=c("response"))
     prob.MC <- predi(beta.vet=fit_MCvet[[r]][1:k,1],
@@ -114,20 +97,20 @@ while(r <= REP){
                         rho = fit_MCPvet[[r]][(1:length(rho)+k),1], covar=X, resp=y)
     
     # GLM
-    in.sample.glm <- min.pfp.glm(y = y, prob = prob.glm, pfn.target = pfn.target)
-    pfp.insample.glm[r] <- in.sample.glm$pfp
-    pfn.insample.glm[r] <- in.sample.glm$pfn
+    in.sample.glm <- min.pfp.glm(y = y, prob = prob.glm, sen.target = pfn.target)
+    esp.insample.glm[r] <- in.sample.glm$esp
+    sen.insample.glm[r] <- in.sample.glm$sen
     acc.insample.glm[r] <- in.sample.glm$acc
     corte[r] <- in.sample.glm$c
     attain.pfn.target.glm[r] <- in.sample.glm$attain.pfn.target
     pr.glm <- prev.glm(fit = fit_glmvet[[r]], newY = y.desc[[r]], newX = Xprev,
                        corte = corte[r])
-    pfp.glm[r] <- pr.glm$pfp; pfn.glm[r] <- pr.glm$pfn; acc.glm[r] <- pr.glm$acc
+    esp.glm[r] <- pr.glm$esp; sen.glm[r] <- pr.glm$sen; acc.glm[r] <- pr.glm$acc
     
     # MC
     in.sample.MC <- min.pfp.MC(y = y, prob = prob.MC, pfn.target = pfn.target, s = 1)
-    pfp.insample.MC[r] <- in.sample.MC$pfp
-    pfn.insample.MC[r] <- in.sample.MC$pfn
+    esp.insample.MC[r] <- in.sample.MC$esp
+    sen.insample.MC[r] <- in.sample.MC$sen
     acc.insample.MC[r] <- in.sample.MC$acc
     corte0.MC[[r]] <- in.sample.MC$c0
     corte1.MC[[r]] <- in.sample.MC$c1
@@ -136,12 +119,12 @@ while(r <= REP){
                      rho  = fit_MCvet[[r]][(k+1),1],
                      newY = y.desc[[r]], newX = Xprev,
                      y= y, X = X, corte0 = corte0.MC[[r]], corte1 = corte1.MC[[r]])
-    pfp.MC[r] <- pr.MC$pfp; pfn.MC[r] <- pr.MC$pfn; acc.MC[r] <- pr.MC$acc
+    esp.MC[r] <- pr.MC$esp; sen.MC[r] <- pr.MC$sen; acc.MC[r] <- pr.MC$acc
     
     # MCP
     in.sample.MCP <- min.pfp.MC(y = y, prob = prob.MCP, pfn.target = pfn.target, s = length(rho))
-    pfp.insample.MCP[r] <- in.sample.MCP$pfp
-    pfn.insample.MCP[r] <- in.sample.MCP$pfn
+    esp.insample.MCP[r] <- in.sample.MCP$esp
+    sen.insample.MCP[r] <- in.sample.MCP$sen
     acc.insample.MCP[r] <- in.sample.MCP$acc
     corte0.MCP[[r]] <- in.sample.MCP$c0
     corte1.MCP[[r]] <- in.sample.MCP$c1
@@ -150,33 +133,27 @@ while(r <= REP){
                       rho  = fit_MCPvet[[r]][(k+length(rho)),1],
                       newY = y.desc[[r]], newX = Xprev,
                       y= y, X = X, corte0 = corte0.MCP[[r]], corte1 = corte1.MCP[[r]])
-    pfp.MCP[r] <- pr.MCP$pfp; pfn.MCP[r] <- pr.MCP$pfn; acc.MCP[r] <- pr.MCP$acc
+    esp.MCP[r] <- pr.MCP$esp; sen.MCP[r] <- pr.MCP$sen; acc.MCP[r] <- pr.MCP$acc
     #Escrita das variáveis
     {
-      write.table(x = pfp.insample.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.insample.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.insample.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = est_glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_est_glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = std_glm, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_std_glm.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.insample.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.insample.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.insample.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = est_MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_est_MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = std_MC, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_std_MC.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.insample.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.insample.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.insample.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.insample.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.insample.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.insample.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfp.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfp.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = pfn.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_pfn.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = acc.MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_acc.MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = est_MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_est_MCP.csv'), row.names = F, col.names = F, sep = ',')
-      write.table(x = std_MCP, file = paste0(folder,'Dados/Parciais/', arg[length(arg)], '/parcial_std_MCP.csv'), row.names = F, col.names = F, sep = ',')
+      results[[r]] <- list(beta=beta, rho=rho, 
+                           X1=X1, X=X, Xprev=Xprev, 
+                           ytotal=ytotal, y.desc=y.desc[[r]], y=y, 
+                           fit_glm=fit_glm1, coef_glm=fit_glm, prob.glm=prob.glm, 
+                           esp.insample.glm=in.sample.glm$esp, sen.insample.glm=in.sample.glm$sen, acc.insample.glm=in.sample.glm$acc, 
+                           corte0.glm=in.sample.glm$c0, corte1.glm=in.sample.glm$c1, attain.pfn.target.glm=in.sample.glm$attain.pfn.target, 
+                           pr.glm=pr.glm, esp.glm=pr.glm$esp, sen.glm=pr.glm$sen, acc.glm=pr.glm$acc,
+                           fit_MC=fit_MC,  prob.MC=prob.MC, prob.MC=prob.MC,
+                           esp.insample.MC=in.sample.MC$esp, sen.insample.MC=in.sample.MC$sen, acc.insample.MC=in.sample.MC$acc, 
+                           corte0.MC=in.sample.MC$c0, corte1.MC=in.sample.MC$c1, attain.pfn.target.MC=in.sample.MC$attain.pfn.target, 
+                           pr.MC=pr.MC, esp.MC=pr.MC$esp, sen.MC=pr.MC$sen, acc.MC=pr.MC$acc,
+                           fit_MCP=fit_MCP, prob.MCP=prob.MCP, prob.MCP=prob.MCP,
+                           esp.insample.MCP=in.sample.MCP$esp, sen.insample.MCP=in.sample.MCP$sen, acc.insample.MCP=in.sample.MCP$acc, 
+                           corte0.MCP=in.sample.MCP$c0, corte1.MCP=in.sample.MCP$c1, attain.pfn.target.MCP=in.sample.MCP$attain.pfn.target,
+                           pr.MCP=pr.MCP, esp.MCP=pr.MCP$esp, sen.MCP=pr.MCP$sen, acc.MCP=pr.MCP$acc)
+      
+      save(list = "results", file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/resultados.rds', sep = ''))
+      
     }
     r  <-  r+1
     cat('\n')
@@ -186,15 +163,23 @@ while(r <= REP){
   }
 }
 
-pf_insample_mat <- rbind(c(mean(pfp.insample.glm), mean(pfp.insample.MC), mean(pfp.insample.MCP)),
-                         c(mean(pfn.insample.glm), mean(pfn.insample.MC), mean(pfn.insample.MCP)),
-                         c(mean(acc.insample.glm), mean(acc.insample.MC), mean(acc.insample.MCP)))
-pf_out_mat <- rbind(c(mean(pfp.glm), mean(pfp.MC), mean(pfp.MCP)),
-                    c(mean(pfn.glm), mean(pfn.MC), mean(pfn.MCP)),
-                    c(mean(acc.glm), mean(acc.MC), mean(acc.MCP)))
+pf_insample_mat <- rbind(c(list_mean(results, "esp.insample.glm"), list_mean(results, "esp.insample.MC"), list_mean(results, "esp.insample.MCP")),
+                         c(list_mean(results, "sen.insample.glm"), list_mean(results, "sen.insample.MC"), list_mean(results, "sen.insample.MCP")),
+                         c(list_mean(results, "acc.insample.glm"), list_mean(results, "acc.insample.MC"), list_mean(results, "acc.insample.MCP")))
+pf_out_mat <- rbind(c(list_mean(results, "esp.glm"), list_mean(results, "esp.MC"), list_mean(results, "esp.MCP")),
+                    c(list_mean(results, "sen.glm"), list_mean(results, "sen.MC"), list_mean(results, "sen.MCP")),
+                    c(list_mean(results, "acc.glm"), list_mean(results, "acc.MC"), list_mean(results, "acc.MCP")))
 pf_mat <- rbind(pf_insample_mat, pf_out_mat)
-rownames(pf_mat) <- c('PFP - insample','PFN - insample','ACC - insample', 'PFP - out', 'PFN - out', 'ACC - out')
+rownames(pf_mat) <- c('esp - insample','sen - insample','ACC - insample', 'esp - out', 'sen - out', 'ACC - out')
 colnames(pf_mat) <- c('GLM', 'MC','MCP')
+
+
+est_glm <- results %>% map(~{.x$coef_glm[,1]}) %>% bind_rows()
+est_MC <- results %>% map(~{.x$fit_MC[,1]}) %>% bind_rows()
+est_MCP <- results %>% map(~{.x$fit_MCP[,1]}) %>% bind_rows()
+std_glm <- results %>% map(~{.x$coef_glm[,2]}) %>% bind_rows()
+std_MC <- results %>% map(~{.x$fit_MC[,2]}) %>% bind_rows()
+std_MCP <- results %>% map(~{.x$fit_MCP[,2]}) %>% bind_rows()
 
 Bias <- cbind(c(colMeans(est_glm)-beta, rep(NA, length(rho))),
               c(colMeans(est_MC)-c(beta, mean(rho)), rep(NA, length(rho)- 1)),

@@ -19,17 +19,19 @@ turn_greek <- function(string){
     stringr::str_replace("_7", "\U2087")
 }
 
-
-beta <- tibble()
+# Boxplots ----
+parameters <- tibble()
 for(i in LETTERS[5:10]){
-  beta_RL <- readr::read_csv(paste0(folder, "Dados/Parciais/", i, "/parcial_est_glm.csv"), col_names = paste0('beta_', 0:1)) %>% mutate(Sim=i, Modelo="RL", rep=1:1000)
-  beta_RLA <- readr::read_csv(paste0(folder, "Dados/Parciais/", i, "/parcial_est_MC.csv"), col_names =  c(paste0('beta_', 0:1), 'rho_1')) %>% mutate(Sim=i, Modelo="RLA", rep=1:1000)
-  beta_RLAP <- readr::read_csv(paste0(folder, "Dados/Parciais/", i, "/parcial_est_MCP.csv"), col_names =  c(paste0('beta_', 0:1), paste0('rho_', 1:7))) %>% mutate(Sim=i, Modelo="RLAP", rep=1:1000)
+  parameters_RL <- readr::read_csv(paste0(folder, "Dados/Parciais/", i, "/parcial_est_glm.csv"), col_names = paste0('beta_', 0:1)) %>% mutate(Sim=i, Modelo="RL", rep=1:1000)
+  parameters_RLA <- readr::read_csv(paste0(folder, "Dados/Parciais/", i, "/parcial_est_MC.csv"), col_names =  c(paste0('beta_', 0:1), 'rho_1')) %>% mutate(Sim=i, Modelo="RLA", rep=1:1000)
+  parameters_RLAP <- readr::read_csv(paste0(folder, "Dados/Parciais/", i, "/parcial_est_MCP.csv"), col_names =  c(paste0('beta_', 0:1), paste0('rho_', 1:7))) %>% mutate(Sim=i, Modelo="RLAP", rep=1:1000)
   
-  beta <-  bind_rows(beta, beta_RLA, beta_RL, beta_RLAP)
+  parameters <-  bind_rows(parameters, parameters_RLA, parameters_RL, parameters_RLAP)
 }
 
-beta  %>% 
+# Beta ----
+parameters  %>% 
+  select(-(starts_with("rho"))) %>% 
   mutate_all(~tidyr::replace_na(.x, 0)) %>% 
   pivot_longer(-c(Sim, Modelo, rep)) %>% 
   mutate(Tamanho=case_when(Sim %in% c('E', 'G','I') ~ "n=280",
@@ -52,8 +54,87 @@ beta  %>%
   ggplot(aes(x=Tamanho, y=value, col=Modelo))+
   geom_boxplot() + 
   geom_hline(aes(yintercept=real_value))+
-  facet_grid(Casos~turn_greek(name))
+  facet_grid(Casos~turn_greek(name), scales = 'free')
 
+# Rho ----
+parameters  %>% 
+  select(-(starts_with("beta"))) %>% 
+  mutate_at(vars(matches("rho")), ~ifelse(is.na(.x) & Modelo =="RLA", rho_1, .x)) %>% 
+  mutate_all(~tidyr::replace_na(.x, 0)) %>% 
+  pivot_longer(-c(Sim, Modelo, rep)) %>% 
+  mutate(Tamanho=case_when(Sim %in% c('E', 'G','I') ~ "n=280",
+                           Sim %in% c('F', 'H','J') ~ "n=840"),
+         Casos=case_when(Sim %in% c('E', 'F') ~ "Sem correlação",
+                         Sim %in% c('G', 'H') ~ "Com correlação",
+                         Sim %in% c('I', 'J') ~ "Com correlação periódica") %>% 
+           factor(levels = c("Sem correlação", "Com correlação", "Com correlação periódica")),
+         real_value = case_when(name == "beta_0" ~ -1, 
+                                name == "beta_1" ~ .5,
+                                Casos == "Sem correlação" ~ 0,
+                                Casos =="Com correlação"~ .5,
+                                name=="rho_1" ~ 0.6,
+                                name=="rho_2" ~ 0.3, 
+                                name=="rho_3" ~ 0.1,
+                                name=="rho_4" ~ -0.2, 
+                                name=="rho_5" ~ -0.4,
+                                name=="rho_6" ~ -0.2, 
+                                name=="rho_7" ~ 0.2)) %>% 
+  ggplot(aes(x=Tamanho, y=value, col=Modelo))+
+  geom_boxplot() + 
+  geom_hline(aes(yintercept=real_value))+
+  facet_grid(Casos~turn_greek(name), scales = 'free')
+
+
+# Barplots ----
+# RMSE - Beta ----
+parameters  %>% 
+  select(-(starts_with("rho"))) %>% 
+  mutate_all(~tidyr::replace_na(.x, 0)) %>% 
+  pivot_longer(-c(Sim, Modelo, rep)) %>% 
+  mutate(Tamanho=case_when(Sim %in% c('E', 'G','I') ~ "n=280",
+                           Sim %in% c('F', 'H','J') ~ "n=840"),
+         Casos=case_when(Sim %in% c('E', 'F') ~ "Sem correlação",
+                         Sim %in% c('G', 'H') ~ "Com correlação",
+                         Sim %in% c('I', 'J') ~ "Com correlação periódica") %>% 
+           factor(levels = c("Sem correlação", "Com correlação", "Com correlação periódica")),
+         real_value = case_when(name == "beta_0" ~ -1, 
+                                name == "beta_1" ~ .5)) %>% 
+  mutate(SE = (value - real_value)^2) %>% 
+  group_by(Sim, Modelo, name, Tamanho, Casos) %>% 
+  summarise(RMSE = sqrt(mean(SE))) %>% 
+  ggplot(aes(x=Tamanho, y=RMSE, fill=Modelo))+
+  geom_col(position="dodge") + 
+  facet_grid(Casos~turn_greek(name), scales = 'free')
+
+# RMSE - Rho ----
+parameters  %>% 
+  select(-(starts_with("beta"))) %>% 
+  mutate_at(vars(matches("rho")), ~ifelse(is.na(.x) & Modelo =="RLA", rho_1, .x)) %>% 
+  mutate_all(~tidyr::replace_na(.x, 0)) %>% 
+  pivot_longer(-c(Sim, Modelo, rep)) %>% 
+  mutate(Tamanho=case_when(Sim %in% c('E', 'G','I') ~ "n=280",
+                           Sim %in% c('F', 'H','J') ~ "n=840"),
+         Casos=case_when(Sim %in% c('E', 'F') ~ "Sem correlação",
+                         Sim %in% c('G', 'H') ~ "Com correlação",
+                         Sim %in% c('I', 'J') ~ "Com correlação periódica") %>% 
+           factor(levels = c("Sem correlação", "Com correlação", "Com correlação periódica")),
+         real_value = case_when(Casos == "Sem correlação" ~ 0,
+                                Casos =="Com correlação"~ .5,
+                                name=="rho_1" ~ 0.6,
+                                name=="rho_2" ~ 0.3, 
+                                name=="rho_3" ~ 0.1,
+                                name=="rho_4" ~ -0.2, 
+                                name=="rho_5" ~ -0.4,
+                                name=="rho_6" ~ -0.2, 
+                                name=="rho_7" ~ 0.2)) %>%
+  mutate(SE = (value - real_value)^2) %>% 
+  group_by(Sim, Modelo, name, Tamanho, Casos) %>% 
+  summarise(RMSE = sqrt(mean(SE))) %>% 
+  ggplot(aes(x=Tamanho, y=RMSE, fill=Modelo))+
+  geom_col(position="dodge") + 
+  facet_grid(Casos~turn_greek(name), scales = 'free')
+
+# Especificity, Sensibility and Accuracy ----
 metrics <- tibble()
 for(i in LETTERS[5:10]){
   acc_RL <- readr::read_csv(paste0(folder, "Dados/Parciais/", i, "/parcial_acc.glm.csv"), col_names = 'acc')

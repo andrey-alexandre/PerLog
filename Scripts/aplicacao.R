@@ -182,7 +182,7 @@ grupos_trn <- grupos[!fl_tst]; grupos_tst <- grupos[fl_tst]
 ############################
 gam <- 1#Potência utilizada no cálculo dos w's
 length_out <- 20
-i <- 'WL'
+i <- 'UL'
 for(i in c('UL', 'WL', 'PWL')){
   set.seed(555)
   if(i == 'UL'){
