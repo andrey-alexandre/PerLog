@@ -222,7 +222,7 @@ for(i in c('UL', 'WL', 'PWL')){
                                par0 = c(coef(ols_fit), 0), w0=w0, alpha=c(w3, 1), trace = 1)
     pMC[[j]] <- predi(beta.vet=fit_MC[[j]][1:length(fit_glm$coefficients)],
                       rho=fit_MC[[j]][length(fit_glm$coefficients)+1], covar=X_trn, resp=as.numeric(y_trn))
-    minpfpMC[[j]] <- min.pfp.MC(y=as.numeric(y_trn), prob=pMC[[j]], pfn.target = .1, s=1)
+    minpfpMC[[j]] <- min.pfp.MC(y=as.numeric(y_trn), prob=pMC[[j]], esp.target = .9, s=1)
   }
 
   
@@ -239,7 +239,7 @@ for(i in c('UL', 'WL', 'PWL')){
                           alpha=c(w3, rep(1, 7)), trace = 1)
     pMCP[[j]] <- predi(beta.vet=fit_MCP[[j]][1:length(fit_glm$coefficients)],
                       rho=fit_MCP[[j]][length(fit_glm$coefficients)+1:7], covar=X_trn, resp=as.numeric(y_trn))
-    minpfpMCP[[j]] <- min.pfp.MC(y=as.numeric(y_trn), prob=pMCP[[j]], pfn.target = .1, s=7)
+    minpfpMCP[[j]] <- min.pfp.MC(y=as.numeric(y_trn), prob=pMCP[[j]], esp.target = .9, s=7)
   }
 
   coef_MCP <- fit_MCP[[which.max(rbind(lapply(minpfpMCP, function(x) x$acc)))]][,1]

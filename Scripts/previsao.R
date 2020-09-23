@@ -48,15 +48,15 @@ for(i in c('UL', 'WL', 'PWL')){
   #################################################
   ################## FORECASTING ##################
   #################################################
-  pfn_target <- .1
+  esp_target <- .9
   
   pglm <- predict(object = fit_glm, newx = sel_matrp_RL, type = 'response')
-  minpfpGLM <- min.pfp.glm(y=O3, prob=pglm, sen.target = pfn_target)
+  minpfpGLM <- min.pfp.glm(y=O3, prob=pglm, sen.target = esp_target)
   prevGLM <- prev.glm(fit=fit_glm, newY=as.matrix(O3p), newX=sel_matrp_RL, corte=minpfpGLM$c)
   
   pMC <- predi(beta.vet=fit_MC[1:length(fit_glm$coefficients)],
                rho=fit_MC[length(fit_glm$coefficients)+1], covar=sel_matr_RLA, resp=O3)
-  minpfpMC <- min.pfp.MC(y=O3, prob=pMC, pfn.target = pfn_target, s=1)
+  minpfpMC <- min.pfp.MC(y=O3, prob=pMC, esp.target = esp_target, s=1)
   prevMC <- prev.MC(beta=fit_MC[1:length(fit_glm$coefficients)],
                     rho  = fit_MC[length(fit_glm$coefficients)+1],
                     newY = O3p, newX = sel_matrp_RLA,
@@ -64,7 +64,7 @@ for(i in c('UL', 'WL', 'PWL')){
   
   pMCP <- predi(beta.vet=fit_MCP[1:length(fit_glm$coefficients)],
                 rho=fit_MCP[length(fit_glm$coefficients)+1:7], covar=sel_matr_RLAP, resp=O3)
-  minpfpMCP <- min.pfp.MC(y=O3, prob=pMCP, pfn.target = pfn_target, s=7)
+  minpfpMCP <- min.pfp.MC(y=O3, prob=pMCP, esp.target = esp_target, s=7)
   prevMCP <- prev.MC(beta=fit_MCP[1:length(fit_glm$coefficients)],
                      rho  = fit_MCP[length(fit_glm$coefficients)+1:7],
                      newY = O3p, newX = sel_matrp_RLAP,

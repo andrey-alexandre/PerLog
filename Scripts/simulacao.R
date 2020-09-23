@@ -17,7 +17,7 @@ arg <- c(280, 1, .4, .5, .2, .4, .3, .5, .45, 10, 'Z')
 
 # simulacao 
 n <- as.numeric(arg[1]); k <- 2; rho <- as.numeric(arg[-c(1, 2,length(arg)-0:1)]);
-beta <- c(rep(-1, k-1),  as.numeric(arg[2]));n.desc <- 7*40; m <- n+n.desc; pfn.target <- .05
+beta <- c(rep(-1, k-1),  as.numeric(arg[2]));n.desc <- 7*40; m <- n+n.desc; esp.target <- .9
 # X1 <- cbind(1, matrix( runif(n = m*(k-1), min = -1.4, max = -0.6), m, (k-1)))
 # X1 <- cbind(1, (.5*sin(2*pi*(1:m)/28)+runif(m,-1.25,-.75)))
 # X1 <- cbind(1, matrix( seq(from = -2, to = 1, length.out = m*(k-1)), m, (k-1)))
@@ -36,7 +36,7 @@ fit_glmvet <- fit_MCPvet  <- fit_MCvet <- list()
 est_glm <- std_glm <- matrix(nrow = REP, ncol = k)
 est_MCP <- std_MCP <- matrix(nrow = REP, ncol = (k+length(rho)))
 est_MC <- std_MC <- matrix(nrow = REP, ncol = (k+1))
-attain.pfn.target.glm <- attain.pfn.target.MC <- attain.pfn.target.MCP <- NULL
+attain.esp.target.glm <- attain.esp.target.MC <- attain.esp.target.MCP <- NULL
 
 # Leitura necessária caso haja problemas com a sessão
 {
@@ -97,24 +97,24 @@ while(r <= REP){
                         rho = fit_MCPvet[[r]][(1:length(rho)+k),1], covar=X, resp=y)
     
     # GLM
-    in.sample.glm <- min.pfp.glm(y = y, prob = prob.glm, sen.target = pfn.target)
+    in.sample.glm <- min.pfp.glm(y = y, prob = prob.glm, sen.target = esp.target)
     esp.insample.glm[r] <- in.sample.glm$esp
     sen.insample.glm[r] <- in.sample.glm$sen
     acc.insample.glm[r] <- in.sample.glm$acc
     corte[r] <- in.sample.glm$c
-    attain.pfn.target.glm[r] <- in.sample.glm$attain.pfn.target
+    attain.esp.target.glm[r] <- in.sample.glm$attain.esp.target
     pr.glm <- prev.glm(fit = fit_glmvet[[r]], newY = y.desc[[r]], newX = Xprev,
                        corte = corte[r])
     esp.glm[r] <- pr.glm$esp; sen.glm[r] <- pr.glm$sen; acc.glm[r] <- pr.glm$acc
     
     # MC
-    in.sample.MC <- min.pfp.MC(y = y, prob = prob.MC, pfn.target = pfn.target, s = 1)
+    in.sample.MC <- min.pfp.MC(y = y, prob = prob.MC, esp.target = esp.target, s = 1)
     esp.insample.MC[r] <- in.sample.MC$esp
     sen.insample.MC[r] <- in.sample.MC$sen
     acc.insample.MC[r] <- in.sample.MC$acc
     corte0.MC[[r]] <- in.sample.MC$c0
     corte1.MC[[r]] <- in.sample.MC$c1
-    attain.pfn.target.MC[r] <- in.sample.MC$attain.pfn.target
+    attain.esp.target.MC[r] <- in.sample.MC$attain.esp.target
     pr.MC <- prev.MC(beta = fit_MCvet[[r]][1:k,1],
                      rho  = fit_MCvet[[r]][(k+1),1],
                      newY = y.desc[[r]], newX = Xprev,
@@ -122,13 +122,13 @@ while(r <= REP){
     esp.MC[r] <- pr.MC$esp; sen.MC[r] <- pr.MC$sen; acc.MC[r] <- pr.MC$acc
     
     # MCP
-    in.sample.MCP <- min.pfp.MC(y = y, prob = prob.MCP, pfn.target = pfn.target, s = length(rho))
+    in.sample.MCP <- min.pfp.MC(y = y, prob = prob.MCP, esp.target = esp.target, s = length(rho))
     esp.insample.MCP[r] <- in.sample.MCP$esp
     sen.insample.MCP[r] <- in.sample.MCP$sen
     acc.insample.MCP[r] <- in.sample.MCP$acc
     corte0.MCP[[r]] <- in.sample.MCP$c0
     corte1.MCP[[r]] <- in.sample.MCP$c1
-    attain.pfn.target.MCP[r] <- in.sample.MCP$attain.pfn.target
+    attain.esp.target.MCP[r] <- in.sample.MCP$attain.esp.target
     pr.MCP <- prev.MC(beta = fit_MCPvet[[r]][1:k,1],
                       rho  = fit_MCPvet[[r]][(k+length(rho)),1],
                       newY = y.desc[[r]], newX = Xprev,
@@ -141,15 +141,15 @@ while(r <= REP){
                            ytotal=ytotal, y.desc=y.desc[[r]], y=y, 
                            fit_glm=fit_glm1, coef_glm=fit_glm, prob.glm=prob.glm, 
                            esp.insample.glm=in.sample.glm$esp, sen.insample.glm=in.sample.glm$sen, acc.insample.glm=in.sample.glm$acc, 
-                           corte0.glm=in.sample.glm$c0, corte1.glm=in.sample.glm$c1, attain.pfn.target.glm=in.sample.glm$attain.pfn.target, 
+                           corte0.glm=in.sample.glm$c0, corte1.glm=in.sample.glm$c1, attain.esp.target.glm=in.sample.glm$attain.esp.target, 
                            pr.glm=pr.glm, esp.glm=pr.glm$esp, sen.glm=pr.glm$sen, acc.glm=pr.glm$acc,
                            fit_MC=fit_MC,  prob.MC=prob.MC, prob.MC=prob.MC,
                            esp.insample.MC=in.sample.MC$esp, sen.insample.MC=in.sample.MC$sen, acc.insample.MC=in.sample.MC$acc, 
-                           corte0.MC=in.sample.MC$c0, corte1.MC=in.sample.MC$c1, attain.pfn.target.MC=in.sample.MC$attain.pfn.target, 
+                           corte0.MC=in.sample.MC$c0, corte1.MC=in.sample.MC$c1, attain.esp.target.MC=in.sample.MC$attain.esp.target, 
                            pr.MC=pr.MC, esp.MC=pr.MC$esp, sen.MC=pr.MC$sen, acc.MC=pr.MC$acc,
                            fit_MCP=fit_MCP, prob.MCP=prob.MCP, prob.MCP=prob.MCP,
                            esp.insample.MCP=in.sample.MCP$esp, sen.insample.MCP=in.sample.MCP$sen, acc.insample.MCP=in.sample.MCP$acc, 
-                           corte0.MCP=in.sample.MCP$c0, corte1.MCP=in.sample.MCP$c1, attain.pfn.target.MCP=in.sample.MCP$attain.pfn.target,
+                           corte0.MCP=in.sample.MCP$c0, corte1.MCP=in.sample.MCP$c1, attain.esp.target.MCP=in.sample.MCP$attain.esp.target,
                            pr.MCP=pr.MCP, esp.MCP=pr.MCP$esp, sen.MCP=pr.MCP$sen, acc.MCP=pr.MCP$acc)
       
       save(list = "results", file = paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/resultados.rds', sep = ''))
@@ -199,9 +199,9 @@ colnames(mat.EP) <- c('Emp. EP - GLM', 'Hes. EP - GLM', 'Emp. EP - MC', 'Hes. EP
 
 ### RESULTADOS PARA GUARDAR
 paste0('n = ', n, ', rho = (', paste(rho, collapse = ', '), ')')
-PFN_IN_GLM <- mean(!attain.pfn.target.glm)
-PFN_IN_MC <- mean(!attain.pfn.target.MC)
-PFN_IN_MCP <- mean(!attain.pfn.target.MCP)
+PFN_IN_GLM <- mean(!attain.esp.target.glm)
+PFN_IN_MC <- mean(!attain.esp.target.MC)
+PFN_IN_MCP <- mean(!attain.esp.target.MCP)
 PFN_IN_GLM; PFN_IN_MC; PFN_IN_MCP
 pf_mat
 mat_Bias_RMSE
