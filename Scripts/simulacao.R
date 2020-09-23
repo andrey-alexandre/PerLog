@@ -29,8 +29,8 @@ REP <- as.numeric(arg[length(arg)-1])
 # plot.ts(exp(X%*%beta)/(1 + exp(X%*%beta))[,1])
 
 est_glm <- yhat_glm <- std_glm <- est_MCP <- std_MCP <- est_MC <- std_MC <- fit_glmvet <- corte <- NULL
-pfp.insample.MCP <- pfp.insample.MC <- pfp.insample.glm <- sen.insample.MCP <- sen.insample.MC <- sen.insample.glm <- acc.insample.MCP  <- acc.insample.MC <- acc.insample.glm <- NULL
-pfp.glm <- sen.glm <- acc.glm <- pfp.MCP <- sen.MCP <- acc.MCP <- pfp.MC <- sen.MC <- acc.MC <- NULL
+esp.insample.MCP <- esp.insample.MC <- esp.insample.glm <- sen.insample.MCP <- sen.insample.MC <- sen.insample.glm <- acc.insample.MCP  <- acc.insample.MC <- acc.insample.glm <- NULL
+esp.glm <- sen.glm <- acc.glm <- esp.MCP <- sen.MCP <- acc.MCP <- esp.MC <- sen.MC <- acc.MC <- NULL
 corte0.MC <- corte1.MC <- corte0.MCP <- corte1.MCP <- list()
 fit_glmvet <- fit_MCPvet  <- fit_MCvet <- list()
 est_glm <- std_glm <- matrix(nrow = REP, ncol = k)
@@ -44,10 +44,10 @@ attain.esp.target.glm <- attain.esp.target.MC <- attain.esp.target.MCP <- NULL
   if(!dir.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/', arg[length(arg)], '/'))) dir.create(path = paste0('/home/andrey/Projetos/PerLog/Dados/Metricas/', arg[length(arg)], '/'), recursive = T)
   if(file.exists(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/resultados.rds'))) load(paste0('/home/andrey/Projetos/PerLog/Dados/Parciais/', arg[length(arg)], '/resultados.rds'))
 }
-r <- 1 + length(pfp.insample.glm)
+r <- 1 + length(esp.insample.glm)
 
 ct.fim.vet <- prob <- fit_MCvet <- fit_MCPvet <- y.desc <- results <- list()
-set.seed(325 + length(pfp.insample.glm))
+set.seed(325 + length(esp.insample.glm))
 while(r <= REP){
   cat('Repl.', r)
   # generate data

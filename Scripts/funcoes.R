@@ -1,7 +1,7 @@
 #################
 ### LIBRARIES ###
 #################
-library(dplyr)
+library(tidyverse)
 library(lbfgs)
 ##############
 # Predito MC #
