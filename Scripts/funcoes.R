@@ -368,52 +368,61 @@ min.pfp.MC <- function(corte.inic=NULL, lamb=30, esp.target=.95,
 ##################
 # PFP minimo glm #
 ##################
+pfp.pfn.glm <- function(corte, out){
+  y <- out$y; prob <- out$prob
+  
+  yp <- as.numeric(prob > corte)
+  
+  a <- length(which(y==0 & yp==0))
+  b <- length(which(y==0 & yp==1))
+  c <- length(which(y==1 & yp==0))
+  d <- length(which(y==1 & yp==1))
+  acc <- (a+d)/(a+b+c+d)
+  esp <- ifelse(a+b==0, (a+c)/(a+b+c+d), a/(a+b))
+  sen <- ifelse(c+d==0, (b+d)/(a+b+c+d), d/(c+d))
+  pfp <- ifelse(b+d==0, (a+b)/(a+b+c+d), b/(b+d))
+  pfn <- ifelse(a+c==0, (c+d)/(a+b+c+d), c/(a+c))
+  
+  
+  return(list(pfp=pfp, pfn=pfn, sen=sen, esp=esp, acc=acc))
+}
 
-min.pfp.glm <- function(corte=seq(0.01,0.99,by=0.01), sen.target=.05, y, prob,
-                        li=0.000000001, ls=0.999999999){
-  sen <- esp <- pfp <- pfn <- acc <- NULL
-  pfn.min <- NULL
-  nenhum.menor.que.esp.target=TRUE;esp.max <- 0
-  for(j in 1:length(corte)){
-    yp <- as.numeric(prob > corte[j])
-    
-    a <- length(which(y==0 & yp==0))
-    b <- length(which(y==0 & yp==1))
-    c <- length(which(y==1 & yp==0))
-    d <- length(which(y==1 & yp==1))
-    acc[j] <- (a+d)/(a+b+c+d)
-    esp[j] <- ifelse(a+b==0, (a+c)/(a+b+c+d), a/(a+b))
-    sen[j] <- ifelse(c+d==0, (b+d)/(a+b+c+d), d/(c+d))
-    pfp[j] <- ifelse(b+d==0, (a+b)/(a+b+c+d), b/(b+d))
-    pfn[j] <- ifelse(a+c==0, (c+d)/(a+b+c+d), c/(a+c))
-    
-    if((1-sen[j]<=sen.target) & (esp[j]>esp.max)){
-      cortemin <- corte[j]
-      pfp.min <- pfp[j]
-      pfn.min <- pfn[j]
-      esp.max <- esp[j]
-      sen.min <- sen[j]
-      acc.min <- acc[j]
-      nenhum.menor.que.esp.target=FALSE
-    }
-  }
-  if(nenhum.menor.que.esp.target){
-    pfn.min <- min(pfn)
-    cortemin <- corte[which.min(pfn)]
-    pfp.min <- pfp[which.min(pfn)]
-    esp.max <- esp[which.min(pfn)]
-    sen.min <- sen[which.min(pfn)]
-    acc.min <- acc[which.min(pfn)]
-    warning(paste('SEN >= ',sen.target,' (target) não encontrado!\n Escolhendo PFP com PFN minimo!', sep=''))
-  }
-  return(list(pfp=pfp.min,
-              pfn=pfn.min,
-              esp=esp.max,
-              sen=sen.min,
-              acc = acc.min,
-              c=cortemin,
-              attain.esp.target=!nenhum.menor.que.esp.target,
-              sen.target=sen.target))
+min.pfp.glm.func <- function(corte, out){
+  out1 <- list(y=out$y, prob=out$prob)
+  lamb <- out$lamb; esp.target <- out$esp.target
+  res <- pfp.pfn.glm(corte = corte, out = out1)
+  func <- (1-res$sen) + lamb*max(0, (1-res$esp-(1-esp.target)))
+  return(func)
+}
+
+min.pfp.glm <- function(corte.inic=NULL, lamb=30, esp.target=.95,
+                        y, prob, maxiter=500){
+  # INICIO FUNCAO
+  if(missing(corte.inic)) corte.inic <- .5
+  out <- list(y=y, prob=prob, lamb=lamb, esp.target=esp.target)
+  fit <- GA::ga(type = 'real-valued',
+                fitness = min.pfp.glm.func,
+                out=out,
+                maxiter = maxiter,
+                monitor = FALSE,
+                lower = 0.01, upper = 0.99
+  )
+  
+  c0 <- attr(fit, 'solution')[1,1]; names(c0) <- "v=1"
+  val <- pfp.pfn.glm(corte = c0,
+                    out = list(y=y, prob=prob))
+  
+  if(1 - val$esp > 1 - esp.target)
+    warning(paste('PFN <= ',esp.target,' (target) não encontrado!\n Escolhendo PFP com PFN minimo!', sep=''))
+  
+  return(list(pfp=val$pfp,
+              pfn=val$pfn,
+              acc=val$acc,
+              esp=val$esp,
+              sen=val$sen,
+              c0=c0,
+              attain.esp.target=(1 - val$esp <= 1 - esp.target),
+              esp.target=esp.target))
 }
 
 ############

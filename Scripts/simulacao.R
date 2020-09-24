@@ -13,7 +13,7 @@ list_mean <- function(list_, name){
 
 arg <- commandArgs(trailingOnly = T)
 # arg <- c(200, round(sin(2*pi*(1:7)/15)/2, 2), 50)
-arg <- c(280, 1, .4, .5, .2, .4, .3, .5, .45, 10, 'Z')
+#arg <- c(280, 1, .4, .5, .2, .4, .3, .5, .45, 10, 'Z')
 
 # simulacao 
 n <- as.numeric(arg[1]); k <- 2; rho <- as.numeric(arg[-c(1, 2,length(arg)-0:1)]);
@@ -97,11 +97,11 @@ while(r <= REP){
                         rho = fit_MCPvet[[r]][(1:length(rho)+k),1], covar=X, resp=y)
     
     # GLM
-    in.sample.glm <- min.pfp.glm(y = y, prob = prob.glm, sen.target = esp.target)
+    in.sample.glm <- min.pfp.glm(y = y, prob = prob.glm, esp.target = esp.target)
     esp.insample.glm[r] <- in.sample.glm$esp
     sen.insample.glm[r] <- in.sample.glm$sen
     acc.insample.glm[r] <- in.sample.glm$acc
-    corte[r] <- in.sample.glm$c
+    corte[r] <- in.sample.glm$c0
     attain.esp.target.glm[r] <- in.sample.glm$attain.esp.target
     pr.glm <- prev.glm(fit = fit_glmvet[[r]], newY = y.desc[[r]], newX = Xprev,
                        corte = corte[r])
