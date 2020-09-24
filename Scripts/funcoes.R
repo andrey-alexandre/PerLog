@@ -326,7 +326,7 @@ min.pfp.MC.func <- function(corte, out){
   lamb <- out$lamb; esp.target <- out$esp.target
   res <- pfp.pfn.MC(corte = corte, out = out1)
   func <- (1-res$sen) + lamb*max(0, (1-res$esp-(1-esp.target)))
-  return(func)
+  return(-func)
 }
 
 min.pfp.MC <- function(corte.inic=NULL, lamb=30, esp.target=.95,
@@ -392,7 +392,7 @@ min.pfp.glm.func <- function(corte, out){
   lamb <- out$lamb; esp.target <- out$esp.target
   res <- pfp.pfn.glm(corte = corte, out = out1)
   func <- (1-res$sen) + lamb*max(0, (1-res$esp-(1-esp.target)))
-  return(func)
+  return(-func)
 }
 
 min.pfp.glm <- function(corte.inic=NULL, lamb=30, esp.target=.95,
