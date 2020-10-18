@@ -1,5 +1,5 @@
 #Note ANDREY
-folder  <-  "/home/andrey/Projetos/PerLog/"
+folder  <-  "/home/rstudio/PerLog/"
 # PC CASA
 # folder<-"/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/"
 # PC ALESSANDRO
@@ -21,7 +21,7 @@ replace_na <- function(x){
 }
 weekend <- function(date_){
   weekday <- weekdays(date_)
-  weekend <- ifelse(weekday %in% c('sábado', 'domingo'), 'Weekend', 'Weekday')
+  weekend <- ifelse(weekday %in% c('Saturday', 'Sunday'), 'Weekend', 'Weekday')
   weekend <- factor(weekend, levels = c('Weekend', 'Weekday'), labels = c('Weekend', 'Weekday'))
   
   return(weekend)
@@ -40,11 +40,11 @@ get_season <- function(input_date){
 ### PREPROCESSING ###
 #####################
 dados <- 
-  readxl::read_excel(paste0(folder,"Dados/dados_NA.xlsx"))
+ read_csv2(paste0(folder,"Dados/Dados_NA.csv"))
 
 y <- dados %>% 
   select(data_=Data, E1_O3) %>% 
-  mutate(data_ = floor_date(data_, 'day'),
+  mutate(data_ = floor_date(ymd_hms(data_), 'day'),
          E1_O3 =  replace_na(E1_O3)) %>%
   group_by(data_) %>% 
   summarise(O3 = max(E1_O3)) %>%
@@ -52,7 +52,7 @@ y <- dados %>%
   (function(x) x>=80)
 date_ <- dados %>% 
   select(data_=Data) %>% 
-  mutate(data_ = floor_date(data_, 'day')) %>% 
+  mutate(data_ = floor_date(ymd_hms(data_), 'day')) %>% 
   distinct
 X_pol <- dados %>% 
   select(data_=Data, no=E1_NO, no2=E1_NO2, CO=E1_CO) %>% 

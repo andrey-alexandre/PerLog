@@ -1,5 +1,5 @@
 #Note ANDREY
-folder  <-  "/home/andrey/Projetos/PerLog/"
+folder  <-  "/home/rstudio/PerLog/"
 # PC CASA
 #folder<-"/home/alessandro/Dropbox/alessandro/2018_2/Orientacao_Monografia_Katiuski/TCCKatiuski/Monografia/codigo/"
 
