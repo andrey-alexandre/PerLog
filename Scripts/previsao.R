@@ -48,10 +48,10 @@ for(i in c('UL', 'WL', 'PWL')){
   #################################################
   ################## FORECASTING ##################
   #################################################
-  esp_target <- .9
+  esp_target <- .8
   
   pglm <- predict(object = fit_glm, newx = sel_matrp_RL, type = 'response')
-  minpfpGLM <- min.pfp.glm(y=O3, prob=pglm, sen.target = esp_target)
+  minpfpGLM <- min.pfp.glm(y=O3, prob=pglm, esp.target = esp_target)
   prevGLM <- prev.glm(fit=fit_glm, newY=as.matrix(O3p), newX=sel_matrp_RL, corte=minpfpGLM$c)
   
   pMC <- predi(beta.vet=fit_MC[1:length(fit_glm$coefficients)],
