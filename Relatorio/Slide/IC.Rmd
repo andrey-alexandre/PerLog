@@ -1,0 +1,283 @@
+---
+title: "Análise da Excedência de Limiar de Ozônio Troposférico por meio de Regressão Logística para Dados Periodicamente Correlacionados"
+author: "Andrey Alexandre de Souza Basilio e Alessandro José Queiroz Sarnaglia"
+institute: "Universidade Federal do Espirito Santo"
+date: "11/11/2020"
+output:
+  xaringan::moon_reader:
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+```
+
+# Introdução
+
+- Os poluentes são divididos entre primários e secundários;
+
+- Ozônio Troposférico causa agravamento de doenças respiratórias;
+
+- Estudos anteriores indicam 80 𝛍g/m³  como concentração limiar de Ozônio;
+
+- Revisão bibliográfica indica presença de correlação periódica;
+
+- O estudo propõe o modelo de Regressão Logística com Autocorrelação Períodica.
+
+---
+class: inverse, center, middle
+
+# Metodologia
+
+---
+
+# Regressão Logística
+
+A variável $Y_i$ segue o modelo logístico se $Y_i|X_i \sim \text{Bernoulli}(\vartheta_t)$, em que $\vartheta_t$ denota a probabilidade de sucesso e satisfaz 
+$$\eta(\vartheta_t) = \text{logit}(\vartheta_t) = \log \left( \frac{\vartheta_t}{1-\vartheta_t} \right) = X_i'\beta,$$
+e $X_i$ e $\beta$ denotam, respectivamente, os vetores de covariáveis e de parâmetros. Outras funções de ligação podem ser consideradas em vez de logit.
+
+--
+
+Os modelos de Regressão Logística não são desenhados para acomodar autocorrelação. Podemos usar o modelo desenvolvido por Azzalini (1994), que é capaz de explicar esse fenômeno.
+
+---
+
+# Regressão Logística com Autocorrelação
+
+Proposto por Azzalini (1994), o modelo de Regressão Logística com Autocorrelação (RLA) é capaz de explicar a estrutura de autocorrelação nos dados via Cadeias de Markov. 
+
+--
+
+Para isso, o valor esperado é $\vartheta=E(Y_t)$ e o coeficiente de autocorrelação $\rho=\text{Corr}(Y_t,Y_{t-1})$. Desta forma as probabilidades de transição são dadas por
+\begin{multline*}
+p_j = P(Y_t=1|Y_{t-1}=j) = \\
+\vartheta_t - \rho\left(\vartheta_t(1-\vartheta_t)\frac{\vartheta_t}{1-\vartheta_t}\right)^{1/2}+ \\
+j\rho[\vartheta_t(1-\vartheta_t)]^{1/2}\left[ \left( \frac{1-\vartheta_t}{\vartheta_t} \right)^{1/2} + \left( \frac{\vartheta_t}{1-\vartheta_t} \right)^{1/2}\right].
+\end{multline*}
+
+---
+
+# Regressão Logística com Autocorrelação
+
+Assumindo $\eta(\vartheta_t)=\text{logit}(\vartheta_t)=X_t'\beta$, escrevemos a log-verossimilhança como
+$$l(\beta, \rho) = \sum_{t=1}^T y_t\text{logit}(p_{y_{t-1}}) + \sum_{t=1}^T \text{ln}(1-p_{y_{t-1}}),$$
+onde $p_{y_0} = \vartheta_1$.
+
+--
+
+O Estimador de Máxima Verossimilhança (EMV) de ( $\beta$, $\rho$) é dado por $(\hat{\beta}, \hat{\rho}) = \text{argmax} [l(\beta, \rho)]$.
+
+---
+
+# Regressão Logística com Autocorrelação Periódica
+
+Tendo em vista fenômenos que possuem correlação periódica, como a emissão de poluentes atmosféricos, é proposto o modelo de Regressão Logística com Autocorrelação Periódica, que generaliza o modelo RLA no cenário de periodicidade na estrutura de autocorrelação.
+
+--
+
+O índice temporal será reescrito como $t = t(r,m) = (r-1)s + m$, $m=1,\ldots,s$, $r \in \mathbb{Z}$, em que $s$ denota o tamanho do período, e $r$ e $m$ representam, respectivamente, o cíclo e o período correspondentes ao índice $t=t(r,m)$.
+
+---
+
+# Regressão Logística com Autocorrelação Periódica
+
+De maneira similar ao RLA, usamos $\vartheta_t= \vartheta_{t(r,m)}$ e de $\rho_{t(r,m)}=\text{Cor}(Y_{t(r,m)}, _{t(r,m)-1})$. Desta forma as probabilidades de transição são dadas por
+\begin{multline*}
+p_{j,m} = \vartheta_{t(r,m)} - \rho_m\left(\vartheta_{t(r,m)}(1-\vartheta_{t(r,m)})\frac{\vartheta_{t(r,m)}}{1-\vartheta_{t(r,m)}}\right)^{1/2} +\\ j\rho_m[\vartheta_{t(r,m)}(1-\vartheta_{t(r,m)})]^{1/2}\left[ \left( \frac{1-\vartheta_{t(r,m)}}{\vartheta_{t(r,m)}} \right)^{1/2} + \left( \frac{\vartheta_{t(r,m)}}{1-\vartheta_{t(r,m)}} \right)^{1/2}\right].
+\end{multline*}
+
+--
+
+A log-verossimilhança do modelo RLAP é dada por
+$$l(\beta, \rho) = \sum_{t=1}^T y_t\text{logit}(p_{y_{t-1}}) + \sum_{t=1}^T \text{ln}(1-p_{y_{t-1}}),$$
+em que $\rho = (\rho_1, \dots, \rho_s)$.
+
+---
+
+# Regressão Logística com Autocorrelação Periódica
+
+A maximização envolvida na obtenção das estimativas do EMV dos modelos RLA e RLAP são realizadas por meio de métodos de otimização numérica e os erros-padrão são aproximados pela diagonal da inversa da Hessiana da Verossimilhança. 
+
+--
+
+As derivadas de primeira e segunda ordem foram calculadas analiticamente para melhorar a eficiência dos algoritmos de otimização numérica.
+
+---
+
+# Seleção de Covariáveis
+
+A seleção de covariáveis é uma etapa comumente realizada no processo de modelagem estatística. Os métodos de estimação retrativa  ( $\textit{Shrinkage estimation}$) têm se popularizado na literatura (Tibshirani, 1996).
+
+Dentre os métodos de estimação retrativa, podemos citar o método Ridge, que apresenta uma penalização quadrática e o método Lasso, que apresenta uma penalização em valor absoluto. Devido à ausência de propriedades de interesse no método Lasso, foi proposto o método Lasso Adaptativo. Este método é definido como a solução do problema de minimização com restrição a seguir:
+$$ \hat{\beta} = \text{argmin}  -l(\beta, \rho) + \lambda \sum_{j=1}^pw_j|\beta_j| ,$$
+onde os pesos $w_j$ sao estabelecidos $\textit{a priori}$.
+
+---
+
+# Seleção de Covariáveis
+Devido as suas vantagens, neste estudo, o método ALASSO será utilizado para realizar a seleção de covariáveis. Para o modelo RL, o ALASSO já se encontra implementado no software R no pacote $\texttt{glmnet}$ função $\texttt{cv.glmnet}$. Para os modelos RLA e RLAP foram o ALASSO teve que ser inteiramente implementado, sendo que a otimização com restrição foi realizada por meio do algoritmo $\texttt{Orthant-Wise Quasi-Newton Limited-Memory}$ implementado pela função $\texttt{lbfgs}$ do pacote $\texttt{lbfgs}$ do software $\texttt{R}$.
+
+---
+
+# Análise de desempenho do modelo
+
+O previsor um passo a frente para o caso RL é igual a 1 caso $\vartheta_{n+1} \geq \tau$ e igual a 0 caso $\vartheta_{n+1} < \tau$, onde $\tau$ representa algum limiar determinado de acordo com os interesses do estudo.
+
+--
+
+No caso do RLAP, o previsor um passo-a-frente será igual a 1 caso $Y_{n} = 0 \text{ e } p_0 \geq \tau_{0, m} \text{ ou } Y_{n} = 1 \text{ e } p_1 \geq \tau_{1, m}$ e 0 caso $Y_{n} = 0 \text{ e } p_0 < \tau_{0, m} \text{ ou } Y_{n} = 1 \text{ e } p_1 < \tau_{1, m}$, onde os limiares $\tau_{0, m}$ e $\tau_{1, m}$ também são determinados de acordo com o interesse do estudo.
+
+---
+
+# Análise de desempenho do modelo
+
+Dentre as possíveis métricas de avaliação de desempenho de um modelo para respostas binárias, serão utilizadas a Sensibilidade (SEN) e a Especifícidade (ESP). Estas métricas são definidas por
+$$\text{SEN} = \text{P}(Y_t = 1|\hat{Y}_{t-1} (1) = 1) \text{ e ESP}=\text{P}(Y_t = 0|\hat{Y}_{t-1} (1) = 0).$$
+
+--
+
+A estratégia para encontrar os limiares $\tau$, $\tau_{0, m}$ e $\tau_{1, m}$ consistirá em escolher esses valores de modo que se maximize a sensibilidade com a restrição de que a especificidade seja maior ou igual a um valor tolerável, que foi fixado em 80\%. O problema de otimização para o modelo RL é escrito como 
+$$f(\tau)=1-SEN(\tau) + \lambda \times \max(0,ESP_{tar}-ESP(\tau)).$$
+
+--
+
+Enquanto no caso do modelo RLA e RLAP, estratégia semelhante foi adotada, no entanto, a função a ser minimizada é
+$$f(\tau_0, \tau_1)=1-SEN(\tau_0, \tau_1) + \lambda \times \max(0,ESP_{tar}-ESP(\tau_0, \tau_1)),$$
+em que $\tau_0=(\tau_{0,1}, \dots\ \tau_{0,s})$ e $\tau_1=(\tau_{1,1}, \dots\ \tau_{1,s})$
+
+---
+class: inverse, center, middle
+
+# Simulação
+
+---
+
+# Cenários
+
+Foi realizado um experimento de Monte Carlo com o intuito de averiguar o desempenho dos estimadores e a capacidade preditiva dos modelos RL, RLA e RLAP. No total, foram investigados quatro cenários: 
+1. sem autocorrelação;
+2. com autocorrelação ( $\rho = 0.5$ );
+3. com autocorrelação periódica com periodicidade mais fraca ( $\underset{\sim}{\rho} = (0.3, 0.2, 0.3, 0.3, 0.3, 0.4, 0.3)$ ); e
+4. com autocorrelação periódica com periodicidade mais forte ( $\underset{\sim}{\rho} = (0.5, 0.3, 0.1, -0.2, -0.4, -0.2, 0.2)$ ).
+
+--
+
+Os cenários (3) e (4) serão utilizados para investigar o efeito da má especificação no p-valor do teste de significância do coeficiente de uma covariável, enquanto os cenários (1), (2) e (4) serão utilizados para realizar a comparação dos modelos em termos de Raiz do Erro Quadrático Médio das estimativas e de desempenho preditivo.
+
+---
+
+# Poder do teste - Cenário de autocorrelação periódica com periodicidade mais fraca
+
+.center[![trachoma](A/TestPower_Fraca.png)]
+
+---
+
+# Poder do teste - Cenário de autocorrelação periódica com periodicidade mais forte
+
+
+.center[![trachoma](A/TestPower_Forte.png)]
+
+---
+
+# Estimação - Betas
+
+.center[![trachoma](A/BoxPlot_Betas.png)]
+
+---
+
+# Estimação - Rho's
+
+.center[![trachoma](A/BoxPlot_Rho.png)]
+
+---
+
+# Estimação - Betas
+
+.center[![trachoma](A/RMSE_Beta.png)]
+
+---
+
+# Estimação - Rho's
+
+.center[![trachoma](A/RMSE_Rho.png)]
+
+---
+
+# Métricas - Intra-amostrais
+
+.center[![trachoma](A/Metricas_Intra.png)]
+
+---
+
+# Métricas - Extra-amostrais
+
+.center[![trachoma](A/Metricas_Extra.png)]
+
+---
+class: inverse, center, middle
+
+# Aplicação
+
+---
+
+# Dados
+
+Os dados foram obtidos do IEMA, coletados dados sobre poluentes e variáveis meteorológicas através da Rede Automática de Monitoramento da Qualidade do Ar. 
+
+Foram analisados os dados de 2010 a 2017, sendo que 2016 e 2017 foram separados previamente para teste da capacidade preditiva dos modelos.
+
+--
+
+Também foram obtidos dados sobre o Índice do Niño Oceânico. De forma resumida, o ONI representa oscilações na temperatura normal da superfície do mar, na região 3.4. 
+
+O conjunto de dados da ONI esta disponíıvel gratuitamente no site da National Oceanic and Atmospheric administration.
+
+---
+
+# Estratégias de Ponderação
+Foram utilizadas três estratégias de ponderação para o ALASSO:
+
+1. em que todos os dados tem o mesmo peso no ajuste da regressão (denominada de $\textit{Unweighted}$ (UL)); 
+2. em que são atribuídos pesos linearmente crescentes ao passo que as observações se tornam mais atuais (denominada de $\textit{Weighted}$ (WL)), mais especificamente, nessa estratégia, é atribuído peso $\frac{t}{n}$ a observação $Y_t,\  t = 1,\dots, n$; e 
+3. em que, novamente, são atribuídos pesos linearmente crescentes, entretanto desta vez o peso $\frac{t}{\#(Y=Y_t)}$ é atribuido a observação $Y_t,\  t = 1,\dots, n$  (denominada de $\textit{Proportional Weighted}$ (PWL)).
+
+---
+
+# Desempenho preditivo
+
+O desempenho preditivo foi avaliado em cenário intra-amostral, com os dados de 2010 e 2015, e extra-amostral, com os dados de 2016 e 2017.
+```{r include=FALSE}
+library(tidyverse)
+```
+
+```{r echo=FALSE}
+tribble(
+  ~'Modelo' , ~'Métrica', ~'UL' , ~'WL' , ~'PWL' ,
+  "RL"      , "ESP"     , 0.074 , 0.12  , 0.091  ,
+  "RL"      , "SEN"     , 0.9   , 0.875 , 0.9    ,
+  "RL"      , "ACC"     , 0.119 , 0.161 , 0.135  ,
+  "RLA"     , "ESP"     , 0.323 , 0.234 , 0.247  ,         
+  "RLA"     , "SEN"     , 0.8   , 0.5   , 0.8    ,
+  "RLA"     , "ACC"     , 0.349 , 0.249 , 0.278  ,
+  "RLAP"    , "ESP"     , 0.46  , 0.511 , 0.553  , 
+  "RLAP"    , "SEN"     , 0.425 , 0.325 , 0.5    ,
+  "RLAP"    , "ACC"     , 0.458 , 0.501 , 0.55 )  %>% 
+knitr::kable(format = 'html')
+```
+
+---
+
+# Conclusão
+
+ A seleção de covariáveis foi realizada por meio do método LASSO adaptativo sob três estratégias de ponderação (sem ponderação, com ponderação para as observações mais recentes e com ponderação pelo inverso da proporção das classes) em cada um dos modelos e o ajuste final foi executado via máxima verossimilhança considerando-se as covariáveis retidas na etapa de seleção via LASSO Adaptativo. 
+
+--
+
+Em termos de acurácia e especificidade, a estratégia de ponderação pelo inverso da proporção das classes para o modelo RLAP apresenta melhores resultados de acurácia. Notou-se que o modelo RLAP apresentou o melhor desempenho preditivo.
+
+
+
