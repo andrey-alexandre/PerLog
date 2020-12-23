@@ -1,0 +1,55 @@
+---
+title: "Análise da Excedência de Limiar de Ozônio Troposférico por meio de Regressão Logística para Dados Periodicamente Correlacionados"
+author: "Andrey Alexandre de Souza Basilio e Alessandro José Queiroz Sarnaglia"
+institute: "Universidade Federal do Espirito Santo"
+date: "11/11/2020"
+output: 
+ beamer_presentation:
+    toc: true
+    slide_level: 2
+    
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+# Introdução{.tabset}
+
+- Os poluentes são divididos entre primários e secundários;
+
+- Ozônio Troposférico causa agravamento de doenças respiratórias;
+
+- Estudos anteriores indicam 80 $\mu$ g/m³  como concentração limiar de Ozônio;
+
+- Revisão bibliográfica indica presença de correlação periódica;
+
+- O estudo propõe o modelo de Regressão Logística com Autocorrelação Períodica.
+
+
+# Metodologia
+
+## Família Exponencial
+
+as observações são geradas por uma distribuição na família exponencial com função densidade (ou massa) de probabiliadde dada por
+$$f(y_t; \theta_t, \phi) = \exp \left\{ \frac{y_t\theta_t - b(\theta_t)}{a_t(\phi)} + c(y_t; \phi)\right\},$$
+em que $\theta_i$ e $\phi$ são parâmetros e $a_t(\phi)$, $b(\theta_t)$ e $c(y_t; \phi)$ são funções conhecidas. Pode ser mostrado que
+$$E(Y_t) = \vartheta_t = b'(\theta_t) \text{ e } Var(Y_t) = \sigma^2_t = b''(\theta_t)a_t(\phi).$$
+
+## Regressão Logística
+
+> A variável $Y_i$ segue o modelo logístico se $Y_i|X_i \sim \text{Bernoulli}(\vartheta_t)$, em que $\vartheta_t$ denota a probabilidade de sucesso e satisfaz 
+$$\eta(\vartheta_t) = \text{logit}(\vartheta_t) = \log \left( \frac{\vartheta_t}{1-\vartheta_t} \right) = X_i'\beta,$$
+e $X_i$ e $\beta$ denotam, respectivamente, os vetores de covariáveis e de parâmetros. Outras funções de ligação podem ser consideradas em vez de logit.
+> Os modelos de Regressão Logística não são desenhados para acomodar autocorrelação. Podemos usar o modelo desenvolvido por Azzalini (1994), que é capaz de explicar esse fenômeno.
+
+## Regressão Logística com Autocorrelação
+
+> Proposto por Azzalini (1994), o modelo de Regressão Logística com Autocorrelação (RLA) é capaz de explicar a estrutura de autocorrelação nos dados via Cadeias de Markov. 
+> Para isso, o valor esperado é $\vartheta=E(Y_t)$ e o coeficiente de autocorrelação $\rho=\text{Corr}(Y_t,Y_{t-1})$. Desta forma as probabilidades de transição são dadas por
+\begin{multline*}
+p_j = P(Y_t=1|Y_{t-1}=j) = \\
+\vartheta_t - \rho\left(\vartheta_t(1-\vartheta_t)\frac{\vartheta_t}{1-\vartheta_t}\right)^{1/2}+ \\
+j\rho[\vartheta_t(1-\vartheta_t)]^{1/2}\left[ \left( \frac{1-\vartheta_t}{\vartheta_t} \right)^{1/2} + \left( \frac{\vartheta_t}{1-\vartheta_t} \right)^{1/2}\right].
+\end{multline*}
